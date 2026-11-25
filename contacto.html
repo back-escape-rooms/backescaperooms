@@ -340,19 +340,24 @@
       estadoEnvio.textContent = `Enviando pase QR a ${parametros.to_email}...`;
       estadoEnvio.className = 'respuesta ok';
       estadoEnvio.hidden = false;
-      btnReenviar.disabled = true;
+      if (btnReenviar) btnReenviar.disabled = true;
 
       try {
         await emailjs.send(
           EMAILJS_CONFIG.SERVICE_ID,
           EMAILJS_CONFIG.TEMPLATE_ID,
-          parametros
+          parametros,
+          { publicKey: EMAILJS_CONFIG.PUBLIC_KEY }
         );
         estadoEnvio.textContent = `¡Pase QR enviado correctamente al correo ${parametros.to_email}! (Revisa también Spam o Promociones).`;
         estadoEnvio.className = 'respuesta ok';
       } catch (err) {
         console.error('Error EmailJS:', err);
-       estadoEnvio.textContent = `Error de EmailJS (${err.status || 'Red'}): ${err.text || 'Revisa permisos de Gmail o bloqueador de anuncios'}`;
+        const detalle = err?.text || err?.message || 'Revisa permisos de Gmail o bloqueador de anuncios';
+        estadoEnvio.textContent = `Error de EmailJS (${err?.status || 'Red'}): ${detalle}`;
+        estadoEnvio.className = 'respuesta fallo';
+      } finally {
+        if (btnReenviar) btnReenviar.disabled = false;
       }
     }
 
@@ -384,8 +389,8 @@
       // SVG local instantáneo para vista previa y descarga en pantalla
       const dataUrlQR = DB.generarQRDataURL(textoQR);
 
-      // URL HTTPS compatible con Gmail/Outlook para incrustar el QR dentro del correo
-      const qrHttpsUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(textoQR)}`;
+      // URL PNG pública compatible con Gmail/Outlook para incrustar el QR dentro del correo
+      const qrHttpsUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&format=png&data=${encodeURIComponent(textoQR)}`;
 
       document.getElementById('imgCodigoQR').src = dataUrlQR;
       document.getElementById('btnDescargarQR').href = dataUrlQR;
@@ -407,12 +412,13 @@
       ultimosDatosEmail = {
         to_email: cita.cliente_correo,
         nombre: cita.cliente_nombre,
-        folio: `#${cita.id} (${cita.codigo_qr})`,
+        folio: `${cita.id} (${cita.codigo_qr})`,
         sala: nombreSala,
         fecha: cita.fecha_cita,
         hora: cita.hora_cita,
         jugadores: String(cita.personas),
-        total: `$${Number(cita.total).toLocaleString('es-MX')} MXN (${nombresMetodo[cita.metodo_pago] || 'Sucursal'})`,
+        total: Number(cita.total).toLocaleString('es-MX'),
+        metodo_pago: nombresMetodo[cita.metodo_pago] || 'Sucursal',
         qr_url: qrHttpsUrl
       };
 
