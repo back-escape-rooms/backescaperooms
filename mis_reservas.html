@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis Reservaciones y Pase QR | Back Escape Rooms</title>
+  <link rel="stylesheet" href="auth_admin.css">
+  <script src="db_local.js"></script>
+</head>
+<body>
+  <header class="barra-superior">
+    <a href="index.html" class="marca-link">
+      <span class="insignia-lvl">LVL-0</span>
+      <span>Back Escape Rooms</span>
+    </a>
+    <nav class="nav-acciones">
+      <a href="index.html">Explorar Salas</a>
+      <a href="#" id="btnLogout">Cerrar Sesión</a>
+    </nav>
+  </header>
+
+  <main class="panel">
+    <header class="panel-cabecera">
+      <div>
+        <h1 id="tituloCliente">Expediente del Explorador</h1>
+        <p>Selecciona tu sala, elige tu método de pago y obtén tu pase de acceso con código QR.</p>
+      </div>
+      <span class="badge-rol">Rol: Cliente</span>
+    </header>
+
+    <section class="tarjeta">
+      <h2 style="margin-top:0;">1. Solicitar Reservación y Pago</h2>
+      <p class="respuesta" id="alertaCliente" role="status" hidden></p>
+
+      <form id="formClienteCita">
+        <div class="grid-dos">
+          <div class="campo">
+            <label for="sala_id">Sala Disponible</label>
+            <select id="sala_id" required></select>
+          </div>
+
+          <div class="fila-dos">
+            <div class="campo">
+              <label for="fecha_cita">Fecha</label>
+              <input type="date" id="fecha_cita" required>
+            </div>
+            <div class="campo">
+              <label for="hora_cita">Hora</label>
+              <input type="time" id="hora_cita" value="17:00" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-dos">
+          <div class="campo">
+            <label for="personas">Número de jugadores</label>
+            <input type="number" id="personas" min="2" max="8" value="3" required>
+          </div>
+          <div class="campo">
+            <label for="notas">Comentarios adicionales</label>
+            <input type="text" id="notas" placeholder="Ej. Nivel de susto moderado">
+          </div>
+        </div>
+
+        <!-- RESUMEN AUTOMÁTICO DEL TOTAL -->
+        <div class="resumen-total">
+          <span id="desglosePrecio">Tarifa por persona × 3 jugadores</span>
+          <strong id="totalPagar">$1,350 MXN</strong>
+        </div>
+
+        <!-- SELECCIÓN DE MÉTODO DE PAGO -->
+        <div class="campo">
+          <label>2. Método de Pago</label>
+          <div class="metodos-pago-grid">
+            <label class="metodo-opcion">
+              <input type="radio" name="metodo_pago" value="tarjeta" checked>
+              <span>Tarjeta Crédito / Débito</span>
+            </label>
+            <label class="metodo-opcion">
+              <input type="radio" name="metodo_pago" value="transferencia">
+              <span>Transferencia SPEI</span>
+            </label>
+            <label class="metodo-opcion">
+              <input type="radio" name="metodo_pago" value="sucursal">
+              <span>Pago en Sucursal</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- DETALLES DINÁMICOS SEGÚN EL MÉTODO DE PAGO -->
+        <div id="boxTarjeta" class="caja-detalle-pago">
+          <div class="grid-dos">
+            <div class="campo">
+              <label for="cardNombre">Titular de la tarjeta</label>
+              <input type="text" id="cardNombre" placeholder="Como aparece en el plástico">
+            </div>
+            <div class="campo">
+              <label for="cardNumero">Número de tarjeta (16 dígitos)</label>
+              <input type="text" id="cardNumero" maxlength="19" placeholder="4532 •••• •••• 8910">
+            </div>
+          </div>
+          <div class="fila-dos" style="max-width:340px;">
+            <div class="campo" style="margin-bottom:0;">
+              <label for="cardExp">Vencimiento</label>
+              <input type="text" id="cardExp" maxlength="5" placeholder="MM/AA">
+            </div>
+            <div class="campo" style="margin-bottom:0;">
+              <label for="cardCvv">CVV</label>
+              <input type="password" id="cardCvv" maxlength="4" placeholder="123">
+            </div>
+          </div>
+        </div>
+
+        <div id="boxSpei" class="caja-detalle-pago" hidden>
+          <p style="margin:0 0 6px;"><strong>Datos para Transferencia Interbancaria SPEI:</strong></p>
+          <p style="margin:4px 0; color:var(--gris);">Banco: <strong>BBVA México</strong> • Beneficiario: <strong>Back Escape Rooms S.A.</strong></p>
+          <p style="margin:4px 0; color:var(--amarillo); font-family:monospace; font-size:1rem;">CLABE: 0123 4567 8901 2345 67</p>
+          <div class="campo" style="margin-top:12px; margin-bottom:0;">
+            <label for="speiRef">Clave de rastreo o referencia</label>
+            <input type="text" id="speiRef" placeholder="Ej. SPEI-984321">
+          </div>
+        </div>
+
+        <div id="boxSucursal" class="caja-detalle-pago" hidden>
+          <p style="margin:0; color:var(--gris);">
+            Tu lugar queda apartado con tu <strong style="color:var(--amarillo);">Pase QR</strong>. Deberás presentarte <strong>15 minutos antes</strong> de tu horario en recepción para liquidar en efectivo o terminal bancaria.
+          </p>
+        </div>
+
+        <button type="submit" class="boton" style="max-width:320px;">Confirmar y Generar Pase QR</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Historial de Reservaciones y Pases QR</h2>
+      <div class="tabla-envoltorio">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Sala</th>
+              <th>Fecha y Hora</th>
+              <th>Total y Pago</th>
+              <th>Estado</th>
+              <th>Pase QR</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyMisCitas"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL DEL CÓDIGO QR DE ACCESO -->
+  <dialog id="modalQR">
+    <article class="pase-qr-card">
+      <span class="insignia-lvl">PASE DE ACCESO M.E.G.</span>
+      <h3 id="qrTituloSala" style="margin:12px 0 4px;">Nivel 0</h3>
+      <p id="qrCodigoTexto" style="margin:0; color:var(--amarillo); font-family:monospace; font-weight:700;"></p>
+
+      <div class="pase-qr-marco">
+        <img id="imgCodigoQR" src="" alt="Código QR de acceso a la sala">
+      </div>
+
+      <div class="pase-datos-lista" id="qrDetalles"></div>
+
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button type="button" class="btn-mini" onclick="window.print()">Imprimir / Guardar PDF</button>
+        <button type="button" class="btn-mini" id="btnCerrarQR" style="background:var(--amarillo); color:#000; border-color:var(--amarillo);">Listo</button>
+      </div>
+    </article>
+  </dialog>
+
+  <script>
+    const sesion = DB.getSesion();
+    if (!sesion) window.location.href = 'acceso.html';
+    if (sesion && sesion.rol === 'admin') window.location.href = 'admin.html';
+
+    document.getElementById('tituloCliente').textContent = `Expediente de ${sesion.nombre}`;
+    document.getElementById('btnLogout').addEventListener('click', (e) => {
+      e.preventDefault();
+      DB.logout();
+    });
+
+    // Fecha mínima = hoy
+    const inputFecha = document.getElementById('fecha_cita');
+    inputFecha.min = new Date().toISOString().split('T')[0];
+
+    const selectSala = document.getElementById('sala_id');
+    const inputPersonas = document.getElementById('personas');
+    const salasDisponibles = DB.getSalas().filter((s) => s.estado === 'disponible');
+
+    salasDisponibles.forEach((s) => {
+      const opt = new Option(`${s.nombre} — $${s.precio} MXN / pers.`, s.id);
+      opt.dataset.precio = s.precio;
+      selectSala.add(opt);
+    });
+
+    function actualizarTotal() {
+      const opt = selectSala.selectedOptions[0];
+      const precio = opt ? Number(opt.dataset.precio) : 450;
+      const cant = Math.max(1, Number(inputPersonas.value) || 2);
+      const total = precio * cant;
+      document.getElementById('desglosePrecio').textContent = `$${precio} MXN × ${cant} jugadores`;
+      document.getElementById('totalPagar').textContent = `$${total.toLocaleString('es-MX')} MXN`;
+    }
+
+    selectSala.addEventListener('change', actualizarTotal);
+    inputPersonas.addEventListener('input', actualizarTotal);
+    actualizarTotal();
+
+    // Alternar paneles de método de pago
+    const radiosPago = document.querySelectorAll('input[name="metodo_pago"]');
+    radiosPago.forEach((radio) => {
+      radio.addEventListener('change', () => {
+        document.getElementById('boxTarjeta').hidden = radio.value !== 'tarjeta';
+        document.getElementById('boxSpei').hidden = radio.value !== 'transferencia';
+        document.getElementById('boxSucursal').hidden = radio.value !== 'sucursal';
+      });
+    });
+
+    // Formateo automático del número de tarjeta
+    document.getElementById('cardNumero').addEventListener('input', (e) => {
+      const limpio = e.target.value.replace(/\D/g, '').slice(0, 16);
+      e.target.value = limpio.replace(/(.{4})/g, '$1 ').trim();
+    });
+
+    // Función para abrir el modal con el Código QR escaneable
+    const modalQR = document.getElementById('modalQR');
+    document.getElementById('btnCerrarQR').addEventListener('click', () => modalQR.close());
+
+    function mostrarPaseQR(cita) {
+      const salasMap = Object.fromEntries(DB.getSalas().map((s) => [s.id, s.nombre]));
+      const nombreSala = salasMap[cita.sala_id] || cita.sala_id;
+      const nombresMetodo = {
+        tarjeta: 'Tarjeta Crédito/Débito',
+        transferencia: 'Transferencia SPEI',
+        sucursal: 'Pago en Sucursal'
+      };
+
+      const contenidoQR = [
+        'BACK ESCAPE ROOMS',
+        `FOLIO:#${cita.id}`,
+        `COD:${cita.codigo_qr || 'BER-' + cita.id}`,
+        `SALA:${cita.sala_id}`,
+        `FECHA:${cita.fecha_cita} ${cita.hora_cita}`,
+        `PERS:${cita.personas}`,
+        `TOTAL:$${cita.total || 0}`
+      ].join('|');
+
+      document.getElementById('imgCodigoQR').src = DB.generarQRDataURL(contenidoQR);
+      document.getElementById('qrTituloSala').textContent = nombreSala;
+      document.getElementById('qrCodigoTexto').textContent = cita.codigo_qr || `FOLIO #${cita.id}`;
+      document.getElementById('qrDetalles').innerHTML = `
+        <p><strong>Explorador titular:</strong> ${cita.cliente_nombre}</p>
+        <p><strong>Fecha y horario:</strong> ${cita.fecha_cita} a las ${cita.hora_cita} hrs</p>
+        <p><strong>Equipo:</strong> ${cita.personas} jugadores</p>
+        <p><strong>Método de pago:</strong> ${nombresMetodo[cita.metodo_pago] || 'Sucursal'} — <strong>$${Number(cita.total || 0).toLocaleString('es-MX')} MXN</strong></p>
+      `;
+
+      modalQR.showModal();
+    }
+    function cargarMisCitas() {
+      const salasMap = Object.fromEntries(DB.getSalas().map((s) => [s.id, s.nombre]));
+      const citas = DB.getCitas().filter(
+        (c) => c.usuario_id === sesion.id || c.cliente_correo === sesion.correo
+      );
+      const tbody = document.getElementById('tbodyMisCitas');
+
+      if (citas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--gris);">Todavía no tienes reservaciones registradas.</td></tr>';
+        return;
+      }
+
+      const etiquetasPago = {
+        tarjeta: 'Tarjeta (Pagado)',
+        transferencia: 'SPEI (En revisión)',
+        sucursal: 'Pagar en sucursal'
+      };
+
+      tbody.innerHTML = '';
+      citas.forEach((c) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>#${c.id}</td>
+          <td><strong>${salasMap[c.sala_id] || c.sala_id}</strong></td>
+          <td>${c.fecha_cita} • ${c.hora_cita} hrs (${c.personas} pers.)</td>
+          <td><strong>$${Number(c.total || 0).toLocaleString('es-MX')} MXN</strong><br><small style="color:var(--gris);">${etiquetasPago[c.metodo_pago] || 'Sucursal'}</small></td>
+          <td><span class="estado-pill estado-${c.estado_cita}">${c.estado_cita}</span></td>
+          <td><button type="button" class="btn-mini btn-ver-qr" style="border-color:var(--amarillo); color:var(--amarillo);">Ver QR</button></td>
+        `;
+        tr.querySelector('.btn-ver-qr').addEventListener('click', () => mostrarPaseQR(c));
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('formClienteCita').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const alerta = document.getElementById('alertaCliente');
+      alerta.hidden = true;
+
+      const metodoPago = document.querySelector('input[name="metodo_pago"]:checked').value;
+
+      if (metodoPago === 'tarjeta') {
+        const num = document.getElementById('cardNumero').value.replace(/\s/g, '');
+        const exp = document.getElementById('cardExp').value.trim();
+        const cvv = document.getElementById('cardCvv').value.trim();
+        if (num.length < 15 || exp.length < 4 || cvv.length < 3) {
+          alerta.textContent = 'Completa los datos de tu tarjeta (16 dígitos, vencimiento y CVV).';
+          alerta.className = 'respuesta fallo';
+          alerta.hidden = false;
+          return;
+        }
+      }
+
+      const res = DB.crearCita({
+        usuario_id: sesion.id,
+        cliente_nombre: sesion.nombre,
+        cliente_correo: sesion.correo,
+        sala_id: selectSala.value,
+        fecha_cita: inputFecha.value,
+        hora_cita: document.getElementById('hora_cita').value,
+        personas: inputPersonas.value,
+        metodo_pago: metodoPago,
+        referencia_pago: document.getElementById('speiRef').value.trim(),
+        notas: document.getElementById('notas').value
+      });
+
+      alerta.textContent = res.mensaje;
+      alerta.className = 'respuesta ok';
+      alerta.hidden = false;
+
+      e.target.reset();
+      actualizarTotal();
+      cargarMisCitas();
+      if (res.cita) mostrarPaseQR(res.cita);
+    });
+
+    cargarMisCitas();
+  </script>
+</body>
+</html>

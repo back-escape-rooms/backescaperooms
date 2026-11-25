@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ficha técnica, imagen y ambientación personalizada del nivel seleccionado en Back Escape Rooms.">
+  <title>Back Escape Rooms | Expediente de Sala</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-tema="nivel-0">
+  <header class="cabecera-principal">
+    <nav class="barra-navegacion" aria-label="Navegación principal">
+      <a href="index.html" class="marca-logo">
+        <span id="marca-insignia-nivel" class="marca-insignia">LVL-0</span>
+        <span>Back Escape Rooms</span>
+      </a>
+      <ul class="menu-lista">
+        <li><a href="index.html" class="menu-enlace">Inicio</a></li>
+        <li><a href="servicios.html" class="menu-enlace">Salas y Servicios</a></li>
+        <li><a href="contacto.html" class="menu-enlace">Reservar y Contacto</a></li>
+        <li><a href="acceso.html" class="menu-enlace">Acceso / Registro</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <nav class="selector-niveles" aria-label="Cambiar de archivo de nivel">
+      <a href="sala.html?nivel=nivel-0" class="chip-nivel" data-nivel="nivel-0">Nivel 0</a>
+      <a href="sala.html?nivel=nivel-1" class="chip-nivel" data-nivel="nivel-1">Nivel 1</a>
+      <a href="sala.html?nivel=nivel-2" class="chip-nivel" data-nivel="nivel-2">Nivel 2</a>
+      <a href="sala.html?nivel=nivel-3" class="chip-nivel" data-nivel="nivel-3">Nivel 3</a>
+      <a href="sala.html?nivel=nivel-4" class="chip-nivel" data-nivel="nivel-4">Nivel 4</a>
+      <a href="sala.html?nivel=nivel-5" class="chip-nivel" data-nivel="nivel-5">Nivel 5</a>
+      <a href="sala.html?nivel=nivel-37" class="chip-nivel" data-nivel="nivel-37">Nivel 37</a>
+      <a href="sala.html?nivel=nivel-run" class="chip-nivel" data-nivel="nivel-run">Nivel !</a>
+    </nav>
+
+    <section class="detalle-sala-layout" aria-labelledby="sala-titulo">
+      <figure class="visor-imagen-sala">
+        <span id="sala-imagen-contenedor">
+          <img
+            id="sala-imagen"
+            referrerpolicy="no-referrer"
+            src="https://preview.redd.it/level-0-is-now-the-threshold-on-the-wikidot-v0-py3n1knokxqg1.jpeg?auto=webp&s=f6178297a884a47a899bf3260252ba6afdeaaebc"
+            alt="Vista previa del Nivel 0: El Vestíbulo Amarillo"
+            style="width: 100%; height: 420px; object-fit: cover; display: block;"
+          >
+        </span>
+        <figcaption>
+          <span id="sala-pie-foto">Registro Visual: Nivel 0 &bull; El Vestíbulo Amarillo</span>
+          <span id="sala-clase-supervivencia">Clase de Supervivencia: Clase 1</span>
+        </figcaption>
+      </figure>
+
+      <article class="expediente-sala">
+        <header class="expediente-cabecera">
+          <section aria-label="Identificación del archivo">
+            <span id="sala-archivo-codigo" class="codigo-archivo">ARCHIVO #LVL-000 &bull; NIVEL 0</span>
+            <h1 id="sala-titulo">Nivel 0: El Vestíbulo Amarillo</h1>
+          </section>
+          <span id="sala-estado-badge" class="estado-badge estado-disponible">Disponible</span>
+        </header>
+
+        <dl class="ficha-atributos">
+          <dt>Dificultad</dt>
+          <dd id="sala-dificultad">Fácil</dd>
+          <dt>Capacidad</dt>
+          <dd id="sala-capacidad">Mín. 2 / Máx. 6 jugadores</dd>
+          <dt>Precio Base</dt>
+          <dd id="sala-precio">$450 MXN / persona</dd>
+          <dt>Duración Máxima</dt>
+          <dd id="sala-duracion">60 minutos</dd>
+        </dl>
+
+        <section class="bloque-lore" aria-labelledby="titulo-historia">
+          <h2 id="titulo-historia">Ambientación e Historia del Nivel</h2>
+          <p id="sala-historia">
+            Has caído fuera de la realidad hacia una extensión interminable de habitaciones vacías con papel tapiz amarillo húmedo, alfombra desgastada y el zumbido constante de luces fluorescentes.
+          </p>
+        </section>
+
+        <section class="bloque-lore" aria-labelledby="titulo-objetivo">
+          <h2 id="titulo-objetivo">Objetivo y Mecánica de Escape</h2>
+          <p id="sala-objetivo">
+            El espacio altera su geometría cada 15 minutos. Tu equipo deberá mapear las marcas en las paredes, sincronizar los interruptores eléctricos y localizar la puerta de salida hacia el Nivel 1 antes de que se agote el tiempo.
+          </p>
+        </section>
+
+        <nav class="acciones-hero" aria-label="Acciones de la sala">
+          <a id="sala-btn-reservar" href="contacto.html?sala=nivel-0" class="boton-primario">Solicitar Reservación de esta Sala</a>
+          <a href="index.html#archivos-salas" class="boton-secundario">&larr; Volver a Archivos</a>
+        </nav>
+      </article>
+    </section>
+  </main>
+
+  <footer class="pie-pagina">
+    <section class="pie-contenedor" aria-label="Información del pie de página">
+      <article class="pie-columna">
+        <h2>Back Escape Rooms</h2>
+        <p>Entretenimiento inmersivo basado en el universo ficticio de los Backrooms. Atrévete a cruzar el umbral.</p>
+      </article>
+
+      <nav class="pie-columna" aria-label="Enlaces del pie de página">
+        <h2>Navegación</h2>
+        <ul>
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="servicios.html">Catálogo de Salas y Promociones</a></li>
+          <li><a href="contacto.html">Reservaciones y Contacto</a></li>
+        </ul>
+      </nav>
+
+      <article class="pie-columna">
+        <h2>Atención al Cliente</h2>
+        <p>Horario: Martes a Domingo, 12:00 a 22:00 hrs.</p>
+        <p>Correo: contacto@backescaperooms.mx</p>
+      </article>
+    </section>
+    <p class="pie-creditos">
+      &copy; 2026 Back Escape Rooms &bull; Proyecto Final desarrollado por Ruiz Castillo Rafael Ezaú y Mendoza Calvillo Paulina (5°A Programación).
+    </p>
+  </footer>
+
+  <script src="db_local.js"></script>
+  <script>
+    const SALAS_BACKROOMS = {
+      "nivel-0": {
+        insignia: "LVL-0",
+        archivo: "ARCHIVO #LVL-000 • NIVEL 0",
+        titulo: "Nivel 0: El Vestíbulo Amarillo",
+        estado: "Disponible",
+        disponible: true,
+        clase: "Clase de Supervivencia: Clase 1 (Seguro / Desorientador)",
+        dificultad: "Fácil",
+        capacidad: "Mín. 2 / Máx. 6 jugadores",
+        precio: "$450 MXN / persona",
+        duracion: "60 minutos",
+        pieFoto: "Registro Visual: Nivel 0 • El Vestíbulo Amarillo",
+        historia: "Has hecho 'no-clip' fuera de la realidad hacia una extensión interminable de oficinas vacías con papel tapiz amarillo húmedo, alfombra desgastada y el zumbido ensordecedor de lámparas fluorescentes a máxima potencia.",
+        objetivo: "Las brújulas y teléfonos pierden señal. Tu equipo deberá rastrear las marcas de exploradores anteriores, descifrar los patrones del papel tapiz y activar la compuerta oculta hacia el Nivel 1 antes de quedar separados.",
+        imagen: "https://preview.redd.it/level-0-is-now-the-threshold-on-the-wikidot-v0-py3n1knokxqg1.jpeg?auto=webp&s=f6178297a884a47a899bf3260252ba6afdeaaebc"
+      },
+      "nivel-1": {
+        insignia: "LVL-1",
+        archivo: "ARCHIVO #LVL-001 • NIVEL 1",
+        titulo: "Nivel 1: Zona Habitable",
+        estado: "Disponible",
+        disponible: true,
+        clase: "Clase de Supervivencia: Clase 1 (Suministros / Apagones)",
+        dificultad: "Intermedio",
+        capacidad: "Mín. 3 / Máx. 6 jugadores",
+        precio: "$550 MXN / persona",
+        duracion: "60 minutos",
+        pieFoto: "Registro Visual: Nivel 1 • Almacén de Concreto y Cajas M.E.G.",
+        historia: "Un gigantesco almacén de concreto brutalista con columnas industriales, tuberías expuestas y cajas de suministros dejadas por el Grupo de Exploración Mayor (M.E.G.). Las luces sufren apagones totales de forma impredecible.",
+        objetivo: "Durante los ciclos de oscuridad el entorno cambia. Deberán abrir las cajas con candados de combinación usando linternas UV, reunir los fusibles principales y restaurar la energía de la salida.",
+        imagen: "https://static.wikia.nocookie.net/backrooms/images/7/79/Level-1.png/revision/latest?cb=20211007150755&path-prefix=es"
+      },
+      "nivel-2": {
+        insignia: "LVL-2",
+        archivo: "ARCHIVO #LVL-002 • NIVEL 2",
+        titulo: "Nivel 2: Sueños de Tuberías",
+        estado: "Disponible",
+        disponible: true,
+        clase: "Clase de Supervivencia: Clase 2 (Calor Extremo / Presión)",
+        dificultad: "Intermedio",
+        capacidad: "Mín. 3 / Máx. 6 jugadores",
+        precio: "$580 MXN / persona",
+        duracion: "60 minutos",
+        pieFoto: "Registro Visual: Nivel 2 • Túneles de Mantenimiento y Vapor",
+        historia: "Túneles de mantenimiento interminables revestidos de tuberías metálicas hirvientes que transportan vapor a alta presión. El ruido ensordecedor de las válvulas dificulta la comunicación entre los integrantes.",
+        objetivo: "La temperatura de la sala sube progresivamente. Tendrán que leer los manómetros ocultos, purgar la presión en el orden exacto de las válvulas y enfriar la escotilla de acero antes de llegar al límite térmico.",
+        imagen: "https://static.wikia.nocookie.net/backrooms/images/8/8a/2493069758_18f67d7ac5_b.jpg/revision/latest?cb=20231104021806&path-prefix=es"
+      },
+      "nivel-3": {
+        insignia: "LVL-3",
+        archivo: "ARCHIVO #LVL-003 • NIVEL 3",
+        titulo: "Nivel 3: Estación Eléctrica",
+        estado: "Disponible",
+        disponible: true,
+        clase: "Clase de Supervivencia: Clase 4 (Alto Voltaje / Laberinto)",
+        dificultad: "Difícil",
+        capacidad: "Mín. 4 / Máx. 8 jugadores",
+        precio: "$680 MXN / persona",
+        duracion: "65 minutos",
+        pieFoto: "Registro Visual: Nivel 3 • Subestación de Ladrillo y Generadores",
+        historia: "Una red claustrofóbica de pasillos de ladrillo antiguo y rejas metálicas saturada de transformadores de alto voltaje, cables colgantes y zumbidos electromagnéticos que interfieren con los equipos.",
+        objetivo: "Diseñada para equipos experimentados. Deberán dividir al grupo en dos sectores comunicados por intercomunicador para balancear tres generadores sin provocar una sobrecarga general.",
+        imagen: "https://static.wikia.nocookie.net/backrooms/images/9/9d/Nivel_3-i3.jpg/revision/latest?cb=20241221205344&path-prefix=es"
+      },
+      "nivel-4": {
+        insignia: "LVL-4",
+        archivo: "ARCHIVO #LVL-004 • NIVEL 4",
+        titulo: "Nivel 4: Oficina Abandonada",
+        estado: "Disponible",
+        disponible: true,
+        clase: "Clase de Supervivencia: Clase 0 (Lluvia Eterna / Archivadores)",
+        dificultad: "Fácil",
+        capacidad: "Mín. 2 / Máx. 6 jugadores",
+        precio: "$480 MXN / persona",
+        duracion: "60 minutos",
+        pieFoto: "Registro Visual: Nivel 4 • Cubículos Vacíos y Ventanales bajo la Lluvia",
+        historia: "Un edificio corporativo desierto donde a través de los ventanales siempre cae una lluvia gris interminable. Escritorios cubiertos de expedientes confidenciales, máquinas de escribir y botellas de Agua de Almendras.",
+        objetivo: "Reconstruye la investigación perdida del Dr. Hayes cruzando carpetas archivadas, claves de computadoras retro y pistas reflejadas en los cristales húmedos para desbloquear el elevador de servicio.",
+        imagen: "https://static.wikia.nocookie.net/backrooms/images/1/12/Hey-Pandas-whats-your-favourite-liminal-space-photo-645989654f348-png_700.jpg/revision/latest?cb=20230910034631&path-prefix=es"
+      },
+      "nivel-5": {
+        insignia: "LVL-5",
+        archivo: "ARCHIVO #LVL-005 • NIVEL 5",
+        titulo: "Nivel 5: Hotel del Terror",
+        estado: "Disponible",
+        disponible: true,
+        clase: "Clase de Supervivencia: Clase 3 (Estilo Años 1920 / Susurros)",
+        dificultad: "Difícil",
+        capacidad: "Mín. 3 / Máx. 7 jugadores",
+        precio: "$650 MXN / persona",
+        duracion: "60 minutos",
+        pieFoto: "Registro Visual: Nivel 5 • Vestíbulo Principal de Caoba y Terciopelo",
+        historia: "Un lujoso hotel de la década de 1920 con alfombras carmesí, madera de caoba tallada, candelabros tenues y música de jazz distante que parece provenir detrás de las paredes.",
+        objetivo: "Resuelve los acertijos del libro de huéspedes en recepción, descifra el código de las llaves de habitación y escapa de la Sala de Calderas antes de que el reloj del vestíbulo marque la medianoche.",
+        imagen: "https://static.wikia.nocookie.net/backrooms/images/5/52/Level_5.png/revision/latest?cb=20211007180502&path-prefix=es"
+      },
+      "nivel-37": {
+        insignia: "LVL-37",
+        archivo: "ARCHIVO #LVL-037 • NIVEL 37",
+        titulo: "Nivel 37: Subliminal (Poolrooms)",
+        estado: "Disponible",
+        disponible: true,
+        clase: "Clase de Supervivencia: Clase 1 (Acústica / Laberinto Acuático)",
+        dificultad: "Intermedio",
+        capacidad: "Mín. 2 / Máx. 6 jugadores",
+        precio: "$620 MXN / persona",
+        duracion: "60 minutos",
+        pieFoto: "Registro Visual: Nivel 37 • Galerías de Azulejo Blanco y Luz Cenital",
+        historia: "Un complejo arquitectónico surrealista compuesto por piscinas interconectadas, arcos de azulejos blancos impecables, escaleras sumergidas y tragaluces que proyectan reflejos turquesa relajantes pero inquietantes.",
+        objetivo: "El eco distorsiona las pistas sonoras. Deberán alinear los prismas de luz cenital, drenar la compuerta central mediante válvulas hidráulicas y hallar la escalera ascendente.",
+        imagen: "https://static.wikia.nocookie.net/backrooms/images/c/cd/PoolroomsThemeBg_%281%29.jpg/revision/latest?cb=20230905193951&path-prefix=es"
+      },
+      "nivel-run": {
+        insignia: "LVL-!",
+        archivo: "ARCHIVO #LVL-RUN • NIVEL !",
+        titulo: "Nivel !: ¡Corre por tu Vida!",
+        estado: "No disponible (En mantenimiento)",
+        disponible: false,
+        clase: "Clase de Supervivencia: Clase 5 (Peligro Extremo / Alta Velocidad)",
+        dificultad: "Difícil",
+        capacidad: "Mín. 3 / Máx. 6 jugadores",
+        precio: "$720 MXN / persona",
+        duracion: "45 minutos",
+        pieFoto: "Registro Visual: Nivel ! • Corredor Hospitalario de Emergencia",
+        historia: "Un pasillo de hospital interminable bañado por luces estroboscópicas rojas y sirenas de evacuación. Señales luminosas de 'EXIT' guían una carrera contrarreloj entre obstáculos físicos y puertas bloqueadas.",
+        objetivo: "Sala actualmente en mantenimiento técnico para calibración de sensores de movimiento y efectos luminosos. Consulta con nuestro equipo la fecha oficial de reapertura.",
+        imagen: "https://static.wikia.nocookie.net/backrooms-freewriting/images/5/5c/Level_%21_at_start.webp/revision/latest?cb=20240305182805"
+      }
+    };
+
+    let nivelActual = "nivel-0";
+
+    function cargarSala(idSolicitado, actualizarUrl = false) {
+      const nivelId = idSolicitado && SALAS_BACKROOMS[idSolicitado] ? idSolicitado : "nivel-0";
+      nivelActual = nivelId;
+      const sala = SALAS_BACKROOMS[nivelId];
+
+      // Cambia el fondo y la paleta cromática completa de la página
+      document.body.setAttribute("data-tema", nivelId);
+
+      document.title = `Back Escape Rooms | ${sala.titulo}`;
+      document.getElementById("marca-insignia-nivel").textContent = sala.insignia;
+      document.getElementById("sala-archivo-codigo").textContent = sala.archivo;
+      document.getElementById("sala-titulo").textContent = sala.titulo;
+      document.getElementById("sala-dificultad").textContent = sala.dificultad;
+      document.getElementById("sala-capacidad").textContent = sala.capacidad;
+      document.getElementById("sala-precio").textContent = sala.precio;
+      document.getElementById("sala-duracion").textContent = sala.duracion;
+      document.getElementById("sala-historia").textContent = sala.historia;
+      document.getElementById("sala-objetivo").textContent = sala.objetivo;
+      document.getElementById("sala-pie-foto").textContent = sala.pieFoto;
+      document.getElementById("sala-clase-supervivencia").textContent = sala.clase;
+
+      const imgSala = document.getElementById("sala-imagen");
+      imgSala.referrerPolicy = "no-referrer";
+      imgSala.src = sala.imagen;
+      imgSala.alt = `Vista previa de ${sala.titulo}`;
+
+      const badge = document.getElementById("sala-estado-badge");
+      const btnReservar = document.getElementById("sala-btn-reservar");
+
+      const salaDB = typeof DB !== "undefined" ? DB.getSalas().find((item) => item.id === nivelId) : null;
+      const estaDisponible = salaDB ? salaDB.estado === "disponible" : sala.disponible;
+      const precioActual = salaDB ? `$${salaDB.precio} MXN / persona` : sala.precio;
+
+      badge.textContent = salaDB
+        ? (estaDisponible ? "Disponible" : (salaDB.estado === "mantenimiento" ? "No disponible (En mantenimiento)" : "Cerrada temporalmente"))
+        : sala.estado;
+      badge.className = `estado-badge ${estaDisponible ? "estado-disponible" : "estado-mantenimiento"}`;
+      document.getElementById("sala-precio").textContent = precioActual;
+
+      if (estaDisponible) {
+        btnReservar.href = `contacto.html?sala=${encodeURIComponent(nivelId)}`;
+        btnReservar.textContent = "Solicitar Reservación de esta Sala";
+        btnReservar.className = "boton-primario";
+      } else {
+        btnReservar.href = "contacto.html";
+        btnReservar.textContent = "Consultar Fecha de Reapertura";
+        btnReservar.className = "boton-secundario";
+      }
+
+      document.querySelectorAll(".chip-nivel").forEach((chip) => {
+        const esActivo = chip.dataset.nivel === nivelId;
+        chip.classList.toggle("activo", esActivo);
+        if (esActivo) {
+          chip.setAttribute("aria-current", "page");
+        } else {
+          chip.removeAttribute("aria-current");
+        }
+      });
+
+      if (actualizarUrl && window.history && window.history.replaceState) {
+        const nuevaUrl = `${window.location.pathname}?nivel=${encodeURIComponent(nivelId)}`;
+        window.history.replaceState({ nivel: nivelId }, "", nuevaUrl);
+      }
+    }
+
+    // Cambio instantáneo al hacer clic en cualquiera de los 8 botones superiores
+    document.querySelectorAll(".chip-nivel").forEach((chip) => {
+      chip.addEventListener("click", (e) => {
+        e.preventDefault();
+        cargarSala(chip.dataset.nivel, true);
+      });
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    cargarSala(params.get("nivel"), false);
+
+    window.addEventListener("storage", (e) => {
+      if (e.key === "ber_salas_v1") cargarSala(nivelActual, false);
+    });
+  </script>
+</body>
+</html>

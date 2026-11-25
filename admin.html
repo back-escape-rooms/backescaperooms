@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel de Administración M.E.G. | Back Escape Rooms</title>
+  <link rel="stylesheet" href="auth_admin.css">
+  <script src="db_local.js"></script>
+</head>
+<body>
+  <header class="barra-superior">
+    <a href="index.html" class="marca-link">
+      <span class="insignia-lvl">LVL-0</span>
+      <span>Back Escape Rooms</span>
+    </a>
+    <nav class="nav-acciones">
+      <a href="index.html">Ver Sitio Público</a>
+      <a href="#" id="btnLogout">Cerrar Sesión</a>
+    </nav>
+  </header>
+
+  <main class="panel">
+    <header class="panel-cabecera">
+      <div>
+        <h1>Panel de Administración M.E.G.</h1>
+        <p>Gestiona la disponibilidad y tarifas de las 8 salas, valida pagos y administra las reservaciones.</p>
+      </div>
+      <span class="badge-rol" id="adminNombreBadge">Admin</span>
+    </header>
+
+    <p class="respuesta" id="alertaAdmin" role="status" hidden></p>
+
+    <!-- 1. CONTROL DE DISPONIBILIDAD Y TARIFAS -->
+    <section class="tarjeta">
+      <h2 style="margin-top:0;">1. Control de Disponibilidad y Tarifas de Salas</h2>
+      <div class="tabla-envoltorio">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Archivo</th>
+              <th>Nivel / Sala</th>
+              <th>Estado Actual</th>
+              <th>Cambiar Estado</th>
+              <th>Precio / Pers.</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tbodySalas"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 2. REGISTRAR NUEVA CITA MANUAL -->
+    <section class="tarjeta">
+      <h2 style="margin-top:0;">2. Agendar Reservación Manual</h2>
+      <form id="formAdminCita">
+        <div class="grid-dos">
+          <div class="campo">
+            <label for="selectCliente">Cliente Registrado (Opcional)</label>
+            <select id="selectCliente">
+              <option value="">-- Captura manual --</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="citaSala">Sala</label>
+            <select id="citaSala" required></select>
+          </div>
+        </div>
+
+        <div class="grid-dos">
+          <div class="campo">
+            <label for="citaNombre">Nombre del Titular</label>
+            <input type="text" id="citaNombre" placeholder="Nombre completo" required>
+          </div>
+          <div class="campo">
+            <label for="citaCorreo">Correo Electrónico</label>
+            <input type="email" id="citaCorreo" placeholder="cliente@correo.com" required>
+          </div>
+        </div>
+
+        <div class="grid-dos">
+          <div class="fila-dos">
+            <div class="campo">
+              <label for="citaFecha">Fecha</label>
+              <input type="date" id="citaFecha" required>
+            </div>
+            <div class="campo">
+              <label for="citaHora">Hora</label>
+              <input type="time" id="citaHora" value="17:00" required>
+            </div>
+          </div>
+
+          <div class="fila-dos">
+            <div class="campo">
+              <label for="citaPersonas">Jugadores</label>
+              <input type="number" id="citaPersonas" min="2" max="8" value="3" required>
+            </div>
+            <div class="campo">
+              <label for="citaNotas">Notas</label>
+              <input type="text" id="citaNotas" placeholder="Observaciones">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="boton" style="max-width:280px;">Registrar Reservación</button>
+      </form>
+    </section>
+
+    <!-- 3. AGENDA GENERAL DE RESERVACIONES -->
+    <section>
+      <h2>3. Agenda General de Reservaciones</h2>
+      <div class="tabla-envoltorio">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Folio / QR</th>
+              <th>Cliente</th>
+              <th>Sala</th>
+              <th>Fecha y Hora</th>
+              <th>Equipo y Pago</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyCitas"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL REPROGRAMAR CITA -->
+  <dialog id="modalReprogramar">
+    <h3 style="margin-top:0; color:var(--amarillo);">Reprogramar Reservación</h3>
+    <form id="formReprogramar">
+      <input type="hidden" id="repCitaId">
+      <div class="campo">
+        <label for="repSala">Sala</label>
+        <select id="repSala" required></select>
+      </div>
+      <div class="fila-dos">
+        <div class="campo">
+          <label for="repFecha">Nueva Fecha</label>
+          <input type="date" id="repFecha" required>
+        </div>
+        <div class="campo">
+          <label for="repHora">Nueva Hora</label>
+          <input type="time" id="repHora" required>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+        <button type="button" class="btn-mini" id="btnCerrarModal">Cancelar</button>
+        <button type="submit" class="btn-mini" style="background:var(--amarillo); color:#000; border-color:var(--amarillo);">Guardar Cambios</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="admin.js"></script>
+</body>
+</html>

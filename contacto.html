@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reservas y Contacto | Back Escape Rooms</title>
+  <link rel="stylesheet" href="auth_admin.css">
+  <script src="db_local.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+  <header class="barra-superior">
+    <a href="index.html" class="marca-link">
+      <span class="insignia-lvl">LVL-0</span>
+      <span>Back Escape Rooms</span>
+    </a>
+    <nav class="nav-acciones">
+      <a href="index.html">Inicio</a>
+      <a href="servicios.html">Salas y Servicios</a>
+      <a href="contacto.html" style="color:var(--amarillo);">Reservar y Contacto</a>
+      <a href="acceso.html">Acceso / Registro</a>
+    </nav>
+  </header>
+
+  <main class="panel">
+    <header class="panel-cabecera">
+      <section>
+        <h1>Reservación Directa y Contacto</h1>
+        <p>Agenda tu incursión con pase QR inmediato o comunícate con nuestro equipo operativo.</p>
+      </section>
+      <span class="badge-rol">León, Gto. • M.E.G.</span>
+    </header>
+
+    <!-- SECCIÓN 1: RESERVACIÓN DIRECTA CON PAGO Y QR -->
+    <section class="tarjeta">
+      <h2 style="margin-top:0;">1. Reservación de Sala y Método de Pago</h2>
+      <p class="respuesta" id="alertaContacto" role="status" hidden></p>
+
+      <form id="formReservaContacto" novalidate>
+        <section class="grid-dos">
+          <p class="campo">
+            <label for="sala_id">Nivel / Sala disponible</label>
+            <select id="sala_id" required></select>
+          </p>
+
+          <section class="fila-dos">
+            <p class="campo">
+              <label for="fecha_cita">Fecha</label>
+              <input type="date" id="fecha_cita" required>
+            </p>
+            <p class="campo">
+              <label for="hora_cita">Horario</label>
+              <input type="time" id="hora_cita" value="17:00" required>
+            </p>
+          </section>
+        </section>
+
+        <section class="grid-dos">
+          <p class="campo">
+            <label for="cliente_nombre">Nombre completo del titular</label>
+            <input type="text" id="cliente_nombre" placeholder="Ej. Sofía Hernández" required>
+          </p>
+          <p class="campo">
+            <label for="cliente_correo">Correo electrónico (para envío de pase)</label>
+            <input type="email" id="cliente_correo" placeholder="nombre@dominio.com" required>
+          </p>
+        </section>
+
+        <section class="grid-dos">
+          <p class="campo">
+            <label for="personas">Número de jugadores (2 a 8)</label>
+            <input type="number" id="personas" min="2" max="8" value="3" required>
+          </p>
+          <p class="campo">
+            <label for="notas">Comentarios adicionales</label>
+            <input type="text" id="notas" placeholder="Ej. Celebración de cumpleaños / Nivel de susto">
+          </p>
+        </section>
+
+        <section class="resumen-total">
+          <span id="desglosePrecio">$450 MXN × 3 jugadores</span>
+          <strong id="totalPagar">$1,350 MXN</strong>
+        </section>
+
+        <fieldset class="campo" style="border:0; padding:0; margin:0 0 18px;">
+          <legend style="font-size:0.875rem; font-weight:700; margin-bottom:8px;">Selecciona tu Método de Pago</legend>
+          <section class="metodos-pago-grid">
+            <label class="metodo-opcion">
+              <input type="radio" name="metodo_pago" value="tarjeta" checked>
+              <span>Tarjeta Crédito / Débito</span>
+            </label>
+            <label class="metodo-opcion">
+              <input type="radio" name="metodo_pago" value="transferencia">
+              <span>Transferencia SPEI</span>
+            </label>
+            <label class="metodo-opcion">
+              <input type="radio" name="metodo_pago" value="sucursal">
+              <span>Pago en Sucursal</span>
+            </label>
+          </section>
+        </fieldset>
+
+        <section id="boxTarjeta" class="caja-detalle-pago">
+          <section class="grid-dos">
+            <p class="campo">
+              <label for="cardNombre">Nombre en la tarjeta</label>
+              <input type="text" id="cardNombre" placeholder="Como aparece en el plástico">
+            </p>
+            <p class="campo">
+              <label for="cardNumero">Número de tarjeta (16 dígitos)</label>
+              <input type="text" id="cardNumero" inputmode="numeric" maxlength="19" placeholder="4532 •••• •••• 8910">
+            </p>
+          </section>
+          <section class="fila-dos" style="max-width:340px;">
+            <p class="campo" style="margin-bottom:0;">
+              <label for="cardExp">Vencimiento</label>
+              <input type="text" id="cardExp" maxlength="5" placeholder="MM/AA">
+            </p>
+            <p class="campo" style="margin-bottom:0;">
+              <label for="cardCvv">CVV</label>
+              <input type="password" id="cardCvv" inputmode="numeric" maxlength="4" placeholder="123">
+            </p>
+          </section>
+        </section>
+
+        <section id="boxSpei" class="caja-detalle-pago" hidden>
+          <p style="margin:0 0 6px;"><strong>Datos para Transferencia Interbancaria SPEI:</strong></p>
+          <p style="margin:4px 0; color:var(--gris);">Banco: <strong>BBVA México</strong> • Beneficiario: <strong>Back Escape Rooms S.A.</strong></p>
+          <p style="margin:4px 0; color:var(--amarillo); font-family:monospace; font-size:1rem;">CLABE: 0123 4567 8901 2345 67</p>
+          <p class="campo" style="margin-top:12px; margin-bottom:0;">
+            <label for="speiRef">Clave de rastreo o referencia</label>
+            <input type="text" id="speiRef" placeholder="Ej. SPEI-984321">
+          </p>
+        </section>
+
+        <section id="boxSucursal" class="caja-detalle-pago" hidden>
+          <p style="margin:0; color:var(--gris);">
+            Tu lugar queda apartado con tu <strong style="color:var(--amarillo);">Pase QR</strong>. Preséntate <strong>15 minutos antes</strong> de tu horario en recepción para liquidar en efectivo o con terminal bancaria.
+          </p>
+        </section>
+
+        <button type="submit" class="boton" style="max-width:330px;">Confirmar Pago y Generar QR</button>
+      </form>
+
+      <!-- PASE QR VISIBLE DIRECTAMENTE EN PANTALLA (100% COMPATIBLE CON CELULAR) -->
+      <section id="resultadoPaseQR" class="pase-inline-box" hidden>
+        <article class="pase-qr-card">
+          <span class="insignia-lvl">PASE DE ACCESO M.E.G.</span>
+          <h3 id="qrTituloSala" style="margin:12px 0 4px;">Nivel 0</h3>
+          <p id="qrCodigoTexto" style="margin:0; color:var(--amarillo); font-family:monospace; font-weight:700;"></p>
+
+          <figure class="pase-qr-marco">
+            <img id="imgCodigoQR" src="" alt="Código QR de acceso a la sala">
+          </figure>
+
+          <section class="pase-datos-lista" id="qrDetalles"></section>
+
+          <p class="respuesta" id="estadoEnvioCorreo" role="status" hidden style="margin-bottom:14px;"></p>
+
+          <nav style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <a id="btnDescargarQR" download="Pase_BackEscapeRooms.svg" class="btn-mini" style="background:var(--amarillo); color:#000; border-color:var(--amarillo); text-decoration:none;">Descargar Pase QR</a>
+            <button type="button" id="btnReenviarQR" class="btn-mini">Reenviar QR al Correo</button>
+            <button type="button" class="btn-mini" onclick="window.print()">Imprimir / PDF</button>
+          </nav>
+        </article>
+      </section>
+    </section>
+
+    <!-- SECCIÓN 2: APARTADO DE CONTACTO Y UBICACIÓN -->
+    <section class="grid-dos" style="margin-top:24px; align-items:start;">
+      <article class="tarjeta" style="margin-bottom:0;">
+        <h2 style="margin-top:0;">2. Contacto Directo y Sucursal</h2>
+        <p style="color:var(--gris); margin-bottom:18px;">
+          ¿Tienes dudas sobre el nivel de intensidad, grupos escolares, eventos privados o empresas? Contáctanos por cualquiera de nuestros canales oficiales.
+        </p>
+
+        <div class="pase-datos-lista" style="margin:0;">
+          <p><strong style="color:var(--amarillo);">Ubicación:</strong> Blvd. Adolfo López Mateos #1420, Col. Centro, C.P. 37000, León, Guanajuato, México.</p>
+          <p><strong style="color:var(--amarillo);">Teléfono / WhatsApp:</strong> <a href="tel:+524771234567" style="color:inherit; text-decoration:underline;">+52 (477) 123 4567</a></p>
+          <p><strong style="color:var(--amarillo);">Correo electrónico:</strong> <a href="mailto:contacto@backescaperooms.mx" style="color:inherit; text-decoration:underline;">contacto@backescaperooms.mx</a></p>
+          <p><strong style="color:var(--amarillo);">Horario de atención:</strong> Martes a Domingo de 14:00 a 23:00 hrs.</p>
+          <p><strong style="color:var(--amarillo);">Protocolo de ingreso:</strong> Llegar 15 minutos antes de la hora agendada con su Pase QR.</p>
+        </div>
+      </article>
+
+      <article class="tarjeta" style="margin-bottom:0;">
+        <h2 style="margin-top:0;">3. Envíanos un Mensaje</h2>
+        <p class="respuesta" id="alertaMensaje" role="status" hidden></p>
+
+        <form id="formMensajeContacto" novalidate>
+          <p class="campo">
+            <label for="msgNombre">Tu nombre</label>
+            <input type="text" id="msgNombre" placeholder="Nombre completo" required>
+          </p>
+
+          <p class="campo">
+            <label for="msgCorreo">Tu correo electrónico</label>
+            <input type="email" id="msgCorreo" placeholder="correo@dominio.com" required>
+          </p>
+
+          <p class="campo">
+            <label for="msgAsunto">Motivo de contacto</label>
+            <select id="msgAsunto">
+              <option value="Duda general sobre las salas">Duda general sobre las salas</option>
+              <option value="Evento privado / Cumpleaños">Evento privado / Cumpleaños</option>
+              <option value="Integración empresarial (Team Building)">Integración empresarial (Team Building)</option>
+              <option value="Soporte con una reservación">Soporte con una reservación</option>
+            </select>
+          </p>
+
+          <p class="campo">
+            <label for="msgTexto">Mensaje</label>
+            <textarea id="msgTexto" rows="4" placeholder="Escribe tu consulta aquí..." style="width:100%; padding:10px 12px; background:#0d0c09; border:1px solid var(--borde); border-radius:8px; color:var(--texto); font-family:inherit; resize:vertical;" required></textarea>
+          </p>
+
+          <button type="submit" class="boton">Enviar Mensaje al Equipo M.E.G.</button>
+        </form>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    'use strict';
+
+    // =========================================================
+    // CREDENCIALES EMAILJS CONFIGURADAS
+    // =========================================================
+    const EMAILJS_CONFIG = {
+      PUBLIC_KEY: 'Tz-JRccC_RmAuIS8S',
+      SERVICE_ID: 'service_qusa0vo',
+      TEMPLATE_ID: 'template_c4kve4r'
+    };
+
+    if (typeof emailjs !== 'undefined') {
+      emailjs.init({ publicKey: EMAILJS_CONFIG.PUBLIC_KEY });
+    }
+
+    const REGEX_CORREO = /^[A-Za-z0-9_%+-]+(\.[A-Za-z0-9_%+-]+)*@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
+
+    const sesionActiva = DB.getSesion();
+    if (sesionActiva) {
+      document.getElementById('cliente_nombre').value = sesionActiva.nombre || '';
+      document.getElementById('cliente_correo').value = sesionActiva.correo || '';
+      document.getElementById('msgNombre').value = sesionActiva.nombre || '';
+      document.getElementById('msgCorreo').value = sesionActiva.correo || '';
+    }
+
+    const inputFecha = document.getElementById('fecha_cita');
+    const hoyISO = new Date().toISOString().split('T')[0];
+    inputFecha.min = hoyISO;
+    inputFecha.value = hoyISO;
+
+    const selectSala = document.getElementById('sala_id');
+    const inputPersonas = document.getElementById('personas');
+    const btnConfirmar = document.querySelector('#formReservaContacto button[type="submit"]');
+    const alertaContacto = document.getElementById('alertaContacto');
+    const salaPreseleccionada = new URLSearchParams(window.location.search).get('sala');
+
+    function mostrarAlerta(texto, esOk) {
+      alertaContacto.textContent = texto;
+      alertaContacto.className = 'respuesta ' + (esOk ? 'ok' : 'fallo');
+      alertaContacto.hidden = false;
+      alertaContacto.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cargarSalasDisponibles(verificarParametroUrl = false) {
+      const todas = DB.getSalas();
+      const disponibles = todas.filter((s) => s.estado === 'disponible');
+      const valorAnterior = selectSala.value;
+
+      selectSala.innerHTML = '';
+
+      if (disponibles.length === 0) {
+        selectSala.add(new Option('No hay salas disponibles en este momento', ''));
+        btnConfirmar.disabled = true;
+        btnConfirmar.style.opacity = '0.5';
+        mostrarAlerta('Todas las salas se encuentran cerradas o en mantenimiento temporalmente.', false);
+        return;
+      }
+
+      btnConfirmar.disabled = false;
+      btnConfirmar.style.opacity = '1';
+
+      disponibles.forEach((s) => {
+        const opt = new Option(`${s.nombre} — $${s.precio} MXN / pers.`, s.id);
+        opt.dataset.precio = s.precio;
+        if (s.id === salaPreseleccionada || s.id === valorAnterior) opt.selected = true;
+        selectSala.add(opt);
+      });
+
+      if (verificarParametroUrl && salaPreseleccionada) {
+        const salaBuscada = todas.find((s) => s.id === salaPreseleccionada);
+        if (salaBuscada && salaBuscada.estado !== 'disponible') {
+          mostrarAlerta(
+            `Aviso: ${salaBuscada.nombre} está actualmente ${salaBuscada.estado === 'mantenimiento' ? 'en mantenimiento' : 'cerrada'} y no admite reservaciones. Elige otra sala disponible.`,
+            false
+          );
+        }
+      }
+
+      actualizarTotal();
+    }
+
+    function actualizarTotal() {
+      const opt = selectSala.selectedOptions[0];
+      const precio = opt && opt.dataset.precio ? Number(opt.dataset.precio) : 0;
+      const cant = Math.max(2, Number(inputPersonas.value) || 2);
+      const total = precio * cant;
+      document.getElementById('desglosePrecio').textContent = `$${precio} MXN × ${cant} jugadores`;
+      document.getElementById('totalPagar').textContent = `$${total.toLocaleString('es-MX')} MXN`;
+    }
+
+    cargarSalasDisponibles(true);
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'ber_salas_v1') cargarSalasDisponibles(false);
+    });
+
+    selectSala.addEventListener('change', actualizarTotal);
+    inputPersonas.addEventListener('input', actualizarTotal);
+
+    document.querySelectorAll('input[name="metodo_pago"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        document.getElementById('boxTarjeta').hidden = radio.value !== 'tarjeta';
+        document.getElementById('boxSpei').hidden = radio.value !== 'transferencia';
+        document.getElementById('boxSucursal').hidden = radio.value !== 'sucursal';
+      });
+    });
+
+    document.getElementById('cardNumero').addEventListener('input', (e) => {
+      const limpio = e.target.value.replace(/\D/g, '').slice(0, 16);
+      e.target.value = limpio.replace(/(.{4})/g, '$1 ').trim();
+    });
+
+    let ultimosDatosEmail = null;
+
+    async function enviarQRPorCorreo(parametros) {
+      const estadoEnvio = document.getElementById('estadoEnvioCorreo');
+      const btnReenviar = document.getElementById('btnReenviarQR');
+
+      estadoEnvio.textContent = `Enviando pase QR a ${parametros.to_email}...`;
+      estadoEnvio.className = 'respuesta ok';
+      estadoEnvio.hidden = false;
+      btnReenviar.disabled = true;
+
+      try {
+        await emailjs.send(
+          EMAILJS_CONFIG.SERVICE_ID,
+          EMAILJS_CONFIG.TEMPLATE_ID,
+          parametros
+        );
+        estadoEnvio.textContent = `¡Pase QR enviado correctamente al correo ${parametros.to_email}! (Revisa también Spam o Promociones).`;
+        estadoEnvio.className = 'respuesta ok';
+      } catch (err) {
+        console.error('Error EmailJS:', err);
+       estadoEnvio.textContent = `Error de EmailJS (${err.status || 'Red'}): ${err.text || 'Revisa permisos de Gmail o bloqueador de anuncios'}`;
+      }
+    }
+
+    document.getElementById('btnReenviarQR').addEventListener('click', () => {
+      if (ultimosDatosEmail) {
+        enviarQRPorCorreo(ultimosDatosEmail);
+      }
+    });
+
+    function mostrarPaseQR(cita) {
+      const salasMap = Object.fromEntries(DB.getSalas().map((s) => [s.id, s.nombre]));
+      const nombreSala = salasMap[cita.sala_id] || cita.sala_id;
+      const nombresMetodo = {
+        tarjeta: 'Tarjeta Crédito/Débito',
+        transferencia: 'Transferencia SPEI',
+        sucursal: 'Pago en Sucursal'
+      };
+
+      const textoQR = [
+        'BACK ESCAPE ROOMS',
+        `FOLIO:#${cita.id}`,
+        `COD:${cita.codigo_qr}`,
+        `SALA:${cita.sala_id}`,
+        `FECHA:${cita.fecha_cita} ${cita.hora_cita}`,
+        `PERS:${cita.personas}`,
+        `TOTAL:$${cita.total}`
+      ].join('|');
+
+      // SVG local instantáneo para vista previa y descarga en pantalla
+      const dataUrlQR = DB.generarQRDataURL(textoQR);
+
+      // URL HTTPS compatible con Gmail/Outlook para incrustar el QR dentro del correo
+      const qrHttpsUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(textoQR)}`;
+
+      document.getElementById('imgCodigoQR').src = dataUrlQR;
+      document.getElementById('btnDescargarQR').href = dataUrlQR;
+      document.getElementById('btnDescargarQR').download = `Pase_${cita.codigo_qr}.svg`;
+
+      document.getElementById('qrTituloSala').textContent = nombreSala;
+      document.getElementById('qrCodigoTexto').textContent = cita.codigo_qr;
+      document.getElementById('qrDetalles').innerHTML = `
+        <p><strong>Explorador titular:</strong> ${cita.cliente_nombre}</p>
+        <p><strong>Fecha y horario:</strong> ${cita.fecha_cita} a las ${cita.hora_cita} hrs</p>
+        <p><strong>Equipo:</strong> ${cita.personas} jugadores</p>
+        <p><strong>Método de pago:</strong> ${nombresMetodo[cita.metodo_pago] || 'Sucursal'} — <strong>$${Number(cita.total).toLocaleString('es-MX')} MXN</strong></p>
+      `;
+
+      const cajaPase = document.getElementById('resultadoPaseQR');
+      cajaPase.hidden = false;
+      cajaPase.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      ultimosDatosEmail = {
+        to_email: cita.cliente_correo,
+        nombre: cita.cliente_nombre,
+        folio: `#${cita.id} (${cita.codigo_qr})`,
+        sala: nombreSala,
+        fecha: cita.fecha_cita,
+        hora: cita.hora_cita,
+        jugadores: String(cita.personas),
+        total: `$${Number(cita.total).toLocaleString('es-MX')} MXN (${nombresMetodo[cita.metodo_pago] || 'Sucursal'})`,
+        qr_url: qrHttpsUrl
+      };
+
+      enviarQRPorCorreo(ultimosDatosEmail);
+    }
+
+    document.getElementById('formReservaContacto').addEventListener('submit', (e) => {
+      e.preventDefault();
+      alertaContacto.hidden = true;
+
+      const nombre = document.getElementById('cliente_nombre').value.trim();
+      const correo = document.getElementById('cliente_correo').value.trim();
+      const fecha = inputFecha.value;
+      const hora = document.getElementById('hora_cita').value;
+      const metodoPago = document.querySelector('input[name="metodo_pago"]:checked').value;
+
+      if (!selectSala.value) {
+        mostrarAlerta('No hay ninguna sala disponible seleccionada.', false);
+        return;
+      }
+
+      if (!nombre) {
+        mostrarAlerta('Escribe el nombre completo del titular.', false);
+        return;
+      }
+
+      if (!REGEX_CORREO.test(correo)) {
+        mostrarAlerta('Escribe un correo electrónico válido (sin espacios).', false);
+        return;
+      }
+
+      if (!fecha || !hora) {
+        mostrarAlerta('Selecciona la fecha y el horario de tu reservación.', false);
+        return;
+      }
+
+      if (metodoPago === 'tarjeta') {
+        const num = document.getElementById('cardNumero').value.replace(/\D/g, '');
+        const exp = document.getElementById('cardExp').value.trim();
+        const cvv = document.getElementById('cardCvv').value.replace(/\D/g, '');
+        if (num.length < 15 || exp.length < 4 || cvv.length < 3) {
+          mostrarAlerta('Completa los 16 dígitos, vencimiento (MM/AA) y CVV de tu tarjeta.', false);
+          return;
+        }
+      }
+
+      const res = DB.crearCita({
+        usuario_id: sesionActiva ? sesionActiva.id : null,
+        cliente_nombre: nombre,
+        cliente_correo: correo,
+        sala_id: selectSala.value,
+        fecha_cita: fecha,
+        hora_cita: hora,
+        personas: inputPersonas.value,
+        metodo_pago: metodoPago,
+        referencia_pago: document.getElementById('speiRef').value.trim(),
+        notas: document.getElementById('notas').value.trim()
+      });
+
+      mostrarAlerta(res.mensaje, res.exito);
+
+      if (!res.exito) {
+        cargarSalasDisponibles(false);
+        return;
+      }
+
+      if (res.cita) mostrarPaseQR(res.cita);
+    });
+
+    document.getElementById('formMensajeContacto').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const alertaMsg = document.getElementById('alertaMensaje');
+      const nombre = document.getElementById('msgNombre').value.trim();
+      const correo = document.getElementById('msgCorreo').value.trim();
+      const asunto = document.getElementById('msgAsunto').value;
+      const texto = document.getElementById('msgTexto').value.trim();
+
+      if (!nombre || !REGEX_CORREO.test(correo) || texto.length < 5) {
+        alertaMsg.textContent = 'Escribe tu nombre, un correo válido y tu mensaje.';
+        alertaMsg.className = 'respuesta fallo';
+        alertaMsg.hidden = false;
+        alertaMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const mensajes = JSON.parse(localStorage.getItem('ber_mensajes_v1') || '[]');
+      const folio = 'MSG-' + Math.floor(1000 + Math.random() * 9000);
+      mensajes.push({
+        folio,
+        nombre,
+        correo,
+        asunto,
+        texto,
+        fecha: new Date().toLocaleString('es-MX')
+      });
+      localStorage.setItem('ber_mensajes_v1', JSON.stringify(mensajes));
+
+      alertaMsg.textContent = `Mensaje recibido (${folio}). Responderemos a ${correo} a la brevedad.`;
+      alertaMsg.className = 'respuesta ok';
+      alertaMsg.hidden = false;
+      document.getElementById('msgTexto').value = '';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acceso y Registro | Back Escape Rooms</title>
+  <link rel="stylesheet" href="auth_admin.css">
+  <script src="db_local.js" defer></script>
+  <script src="auth.js" defer></script>
+</head>
+<body>
+  <header class="barra-superior">
+    <a href="index.html" class="marca-link">
+      <span class="insignia-lvl">LVL-0</span>
+      <span>Back Escape Rooms</span>
+    </a>
+    <nav class="nav-acciones">
+      <a href="index.html">Inicio</a>
+      <a href="servicios.html">Salas y Servicios</a>
+      <a href="contacto.html">Contacto</a>
+    </nav>
+  </header>
+
+  <main class="contenedor">
+    <section class="tarjeta" aria-labelledby="tituloAuth">
+      <h1 id="tituloAuth">Portal de Exploradores</h1>
+      <p class="subtitulo">Inicia sesión como Cliente o Administrador, o crea tu registro previo.</p>
+
+      <div class="tabs-auth" role="tablist">
+        <button type="button" class="tab-btn activo" id="tabLogin" role="tab" aria-selected="true">Iniciar Sesión</button>
+        <button type="button" class="tab-btn" id="tabRegistro" role="tab" aria-selected="false">Registro Previo</button>
+      </div>
+
+      <form id="formLogin" novalidate>
+        <div class="campo">
+          <label for="loginCorreo">Correo electrónico</label>
+          <input type="email" id="loginCorreo" placeholder="explorador@dominio.com" autocomplete="email" required>
+          <p class="error" id="errorLoginCorreo" role="alert" hidden></p>
+        </div>
+
+        <div class="campo">
+          <label for="loginPass">Contraseña</label>
+          <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+
+        <button type="submit" class="boton" id="btnLogin">
+          <span class="boton-texto">Entrar al Sistema</span>
+          <span class="spinner" aria-hidden="true" hidden><i></i><i></i><i></i></span>
+        </button>
+
+        <p class="respuesta" id="respLogin" role="status" hidden></p>
+      </form>
+
+      <form id="formRegistro" novalidate hidden>
+        <div class="campo">
+          <label for="regNombre">Nombre completo</label>
+          <input type="text" id="regNombre" placeholder="Paulina Mendoza" maxlength="100" autocomplete="name" required>
+        </div>
+
+        <div class="campo">
+          <label for="regTelefono">Teléfono de contacto</label>
+          <input type="tel" id="regTelefono" placeholder="477 123 4567" maxlength="20" autocomplete="tel" required>
+        </div>
+
+        <div class="campo">
+          <label for="regCorreo">Correo electrónico</label>
+          <input type="email" id="regCorreo" placeholder="nombre@dominio.com" maxlength="150" autocomplete="email" required>
+          <p class="error" id="errorRegCorreo" role="alert" hidden></p>
+        </div>
+
+        <div class="campo">
+          <label for="regPass">Contraseña (mínimo 6 caracteres)</label>
+          <input type="password" id="regPass" placeholder="Crea una contraseña segura" minlength="6" autocomplete="new-password" required>
+        </div>
+
+        <button type="submit" class="boton" id="btnRegistro">
+          <span class="boton-texto">Completar Registro Previo</span>
+          <span class="spinner" aria-hidden="true" hidden><i></i><i></i><i></i></span>
+        </button>
+
+        <p class="respuesta" id="respRegistro" role="status" hidden></p>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
