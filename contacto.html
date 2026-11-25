@@ -6,6 +6,7 @@
   <title>Reservas y Contacto | Back Escape Rooms</title>
   <link rel="stylesheet" href="auth_admin.css">
   <script src="db_local.js"></script>
+  <script src="main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
@@ -68,14 +69,19 @@
 
         <section class="grid-dos">
           <p class="campo">
+            <label for="cliente_telefono">Teléfono de contacto (10 dígitos)</label>
+            <input type="tel" id="cliente_telefono" maxlength="10" placeholder="Ej. 4771234567" required>
+          </p>
+          <p class="campo">
             <label for="personas">Número de jugadores (2 a 8)</label>
             <input type="number" id="personas" min="2" max="8" value="3" required>
           </p>
-          <p class="campo">
-            <label for="notas">Comentarios adicionales</label>
-            <input type="text" id="notas" placeholder="Ej. Celebración de cumpleaños / Nivel de susto">
-          </p>
         </section>
+
+        <p class="campo">
+          <label for="notas">Comentarios adicionales</label>
+          <input type="text" id="notas" placeholder="Ej. Celebración de cumpleaños / Nivel de susto">
+        </p>
 
         <section class="resumen-total">
           <span id="desglosePrecio">$450 MXN × 3 jugadores</span>
@@ -196,6 +202,11 @@
           <p class="campo">
             <label for="msgCorreo">Tu correo electrónico</label>
             <input type="email" id="msgCorreo" placeholder="correo@dominio.com" required>
+          </p>
+
+          <p class="campo">
+            <label for="msgTelefono">Tu teléfono (10 dígitos)</label>
+            <input type="tel" id="msgTelefono" maxlength="10" placeholder="Ej. 4771234567" required>
           </p>
 
           <p class="campo">
@@ -340,24 +351,19 @@
       estadoEnvio.textContent = `Enviando pase QR a ${parametros.to_email}...`;
       estadoEnvio.className = 'respuesta ok';
       estadoEnvio.hidden = false;
-      if (btnReenviar) btnReenviar.disabled = true;
+      btnReenviar.disabled = true;
 
       try {
         await emailjs.send(
           EMAILJS_CONFIG.SERVICE_ID,
           EMAILJS_CONFIG.TEMPLATE_ID,
-          parametros,
-          { publicKey: EMAILJS_CONFIG.PUBLIC_KEY }
+          parametros
         );
         estadoEnvio.textContent = `¡Pase QR enviado correctamente al correo ${parametros.to_email}! (Revisa también Spam o Promociones).`;
         estadoEnvio.className = 'respuesta ok';
       } catch (err) {
         console.error('Error EmailJS:', err);
-        const detalle = err?.text || err?.message || 'Revisa permisos de Gmail o bloqueador de anuncios';
-        estadoEnvio.textContent = `Error de EmailJS (${err?.status || 'Red'}): ${detalle}`;
-        estadoEnvio.className = 'respuesta fallo';
-      } finally {
-        if (btnReenviar) btnReenviar.disabled = false;
+       estadoEnvio.textContent = `Error de EmailJS (${err.status || 'Red'}): ${err.text || 'Revisa permisos de Gmail o bloqueador de anuncios'}`;
       }
     }
 
@@ -389,8 +395,8 @@
       // SVG local instantáneo para vista previa y descarga en pantalla
       const dataUrlQR = DB.generarQRDataURL(textoQR);
 
-      // URL PNG pública compatible con Gmail/Outlook para incrustar el QR dentro del correo
-      const qrHttpsUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&format=png&data=${encodeURIComponent(textoQR)}`;
+      // URL HTTPS compatible con Gmail/Outlook para incrustar el QR dentro del correo
+      const qrHttpsUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(textoQR)}`;
 
       document.getElementById('imgCodigoQR').src = dataUrlQR;
       document.getElementById('btnDescargarQR').href = dataUrlQR;
@@ -412,13 +418,12 @@
       ultimosDatosEmail = {
         to_email: cita.cliente_correo,
         nombre: cita.cliente_nombre,
-        folio: `${cita.id} (${cita.codigo_qr})`,
+        folio: `#${cita.id} (${cita.codigo_qr})`,
         sala: nombreSala,
         fecha: cita.fecha_cita,
         hora: cita.hora_cita,
         jugadores: String(cita.personas),
-        total: Number(cita.total).toLocaleString('es-MX'),
-        metodo_pago: nombresMetodo[cita.metodo_pago] || 'Sucursal',
+        total: `$${Number(cita.total).toLocaleString('es-MX')} MXN (${nombresMetodo[cita.metodo_pago] || 'Sucursal'})`,
         qr_url: qrHttpsUrl
       };
 
