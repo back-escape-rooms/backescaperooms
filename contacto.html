@@ -6,7 +6,6 @@
   <title>Reservas y Contacto | Back Escape Rooms</title>
   <link rel="stylesheet" href="auth_admin.css">
   <script src="db_local.js"></script>
-  <script src="main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
@@ -69,19 +68,23 @@
 
         <section class="grid-dos">
           <p class="campo">
-            <label for="cliente_telefono">Teléfono de contacto (10 dígitos)</label>
-            <input type="tel" id="cliente_telefono" maxlength="10" placeholder="Ej. 4771234567" required>
-          </p>
-          <p class="campo">
             <label for="personas">Número de jugadores (2 a 8)</label>
             <input type="number" id="personas" min="2" max="8" value="3" required>
           </p>
+          <p class="campo">
+            <label for="notas">Comentarios adicionales</label>
+            <input type="text" id="notas" placeholder="Ej. Celebración de cumpleaños / Nivel de susto">
+          </p>
         </section>
 
-        <p class="campo">
-          <label for="notas">Comentarios adicionales</label>
-          <input type="text" id="notas" placeholder="Ej. Celebración de cumpleaños / Nivel de susto">
-        </p>
+        <section class="campo" style="margin-bottom:14px;">
+          <label for="codigo_descuento">Código de descuento / promoción (opcional)</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="codigo_descuento" placeholder="Ej. NOCLIP20 o ESCUADRON15" style="flex:1; min-width:190px; text-transform:uppercase;">
+            <button type="button" id="btnAplicarCupon" class="btn-mini" style="border-color:var(--amarillo); color:var(--amarillo); padding:10px 16px;">Aplicar Código</button>
+          </div>
+          <small id="msgCupon" style="display:block; margin-top:6px; color:var(--gris);"></small>
+        </section>
 
         <section class="resumen-total">
           <span id="desglosePrecio">$450 MXN × 3 jugadores</span>
@@ -205,11 +208,6 @@
           </p>
 
           <p class="campo">
-            <label for="msgTelefono">Tu teléfono (10 dígitos)</label>
-            <input type="tel" id="msgTelefono" maxlength="10" placeholder="Ej. 4771234567" required>
-          </p>
-
-          <p class="campo">
             <label for="msgAsunto">Motivo de contacto</label>
             <select id="msgAsunto">
               <option value="Duda general sobre las salas">Duda general sobre las salas</option>
@@ -263,9 +261,15 @@
 
     const selectSala = document.getElementById('sala_id');
     const inputPersonas = document.getElementById('personas');
+    const inputCupon = document.getElementById('codigo_descuento');
+    const btnAplicarCupon = document.getElementById('btnAplicarCupon');
+    const msgCupon = document.getElementById('msgCupon');
     const btnConfirmar = document.querySelector('#formReservaContacto button[type="submit"]');
     const alertaContacto = document.getElementById('alertaContacto');
-    const salaPreseleccionada = new URLSearchParams(window.location.search).get('sala');
+    const paramsUrl = new URLSearchParams(window.location.search);
+    const salaPreseleccionada = paramsUrl.get('sala');
+    const cuponUrl = paramsUrl.get('cupon');
+    let cuponActivo = null;
 
     function mostrarAlerta(texto, esOk) {
       alertaContacto.textContent = texto;
@@ -312,13 +316,53 @@
       actualizarTotal();
     }
 
+    function evaluarCupon(silencioso = false) {
+      const raw = inputCupon.value.trim();
+      if (!raw) {
+        cuponActivo = null;
+        if (!silencioso) {
+          msgCupon.textContent = '';
+        }
+        return;
+      }
+      const res = DB.validarCupon(raw, {
+        sala_id: selectSala.value,
+        personas: Math.max(2, Number(inputPersonas.value) || 2),
+        cliente_correo: document.getElementById('cliente_correo').value.trim()
+      });
+      if (res.valida) {
+        cuponActivo = res;
+        msgCupon.textContent = `✓ ${res.mensaje}`;
+        msgCupon.style.color = '#4ade80';
+      } else {
+        cuponActivo = null;
+        msgCupon.textContent = `✕ ${res.mensaje}`;
+        msgCupon.style.color = '#f87171';
+      }
+    }
+
     function actualizarTotal() {
+      if (inputCupon.value.trim()) {
+        evaluarCupon(true);
+      }
       const opt = selectSala.selectedOptions[0];
       const precio = opt && opt.dataset.precio ? Number(opt.dataset.precio) : 0;
       const cant = Math.max(2, Number(inputPersonas.value) || 2);
-      const total = precio * cant;
-      document.getElementById('desglosePrecio').textContent = `$${precio} MXN × ${cant} jugadores`;
+      const subtotal = precio * cant;
+      const descuento = cuponActivo ? Math.round(subtotal * (cuponActivo.porcentaje / 100)) : 0;
+      const total = Math.max(0, subtotal - descuento);
+
+      if (cuponActivo) {
+        document.getElementById('desglosePrecio').textContent =
+          `$${precio} MXN × ${cant} jug. ($${subtotal.toLocaleString('es-MX')}) − ${cuponActivo.porcentaje}% (${cuponActivo.codigo})`;
+      } else {
+        document.getElementById('desglosePrecio').textContent = `$${precio} MXN × ${cant} jugadores`;
+      }
       document.getElementById('totalPagar').textContent = `$${total.toLocaleString('es-MX')} MXN`;
+    }
+
+    if (cuponUrl) {
+      inputCupon.value = cuponUrl.toUpperCase();
     }
 
     cargarSalasDisponibles(true);
@@ -326,8 +370,24 @@
       if (e.key === 'ber_salas_v1') cargarSalasDisponibles(false);
     });
 
+    btnAplicarCupon.addEventListener('click', () => {
+      evaluarCupon(false);
+      actualizarTotal();
+    });
+
+    inputCupon.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        evaluarCupon(false);
+        actualizarTotal();
+      }
+    });
+
     selectSala.addEventListener('change', actualizarTotal);
     inputPersonas.addEventListener('input', actualizarTotal);
+    document.getElementById('cliente_correo').addEventListener('blur', () => {
+      if (inputCupon.value.trim()) actualizarTotal();
+    });
 
     document.querySelectorAll('input[name="metodo_pago"]').forEach((radio) => {
       radio.addEventListener('change', () => {
@@ -363,7 +423,7 @@
         estadoEnvio.className = 'respuesta ok';
       } catch (err) {
         console.error('Error EmailJS:', err);
-       estadoEnvio.textContent = `Error de EmailJS (${err.status || 'Red'}): ${err.text || 'Revisa permisos de Gmail o bloqueador de anuncios'}`;
+        estadoEnvio.textContent = `Error de EmailJS (${err.status || 'Red'}): ${err.text || 'Revisa permisos de Gmail o bloqueador de anuncios'}`;
       }
     }
 
@@ -470,6 +530,15 @@
         }
       }
 
+      if (inputCupon.value.trim()) {
+        evaluarCupon(false);
+        if (!cuponActivo) {
+          mostrarAlerta(msgCupon.textContent.replace(/^✕\s*/, '') || 'El código de descuento no es válido.', false);
+          inputCupon.focus();
+          return;
+        }
+      }
+
       const res = DB.crearCita({
         usuario_id: sesionActiva ? sesionActiva.id : null,
         cliente_nombre: nombre,
@@ -478,6 +547,7 @@
         fecha_cita: fecha,
         hora_cita: hora,
         personas: inputPersonas.value,
+        codigo_descuento: cuponActivo ? cuponActivo.codigo : '',
         metodo_pago: metodoPago,
         referencia_pago: document.getElementById('speiRef').value.trim(),
         notas: document.getElementById('notas').value.trim()
