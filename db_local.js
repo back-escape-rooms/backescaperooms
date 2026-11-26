@@ -1,4 +1,4 @@
-'use strict';
+  'use strict';
 
 /* db_local.js — Base de datos local, generador QR nativo, pagos y sincronización */
 const DB = (() => {
@@ -13,7 +13,7 @@ const DB = (() => {
     { id: 'nivel-0',   codigo: 'ARCHIVO #LVL-000', nombre: 'Nivel 0: El Vestíbulo Amarillo',   estado: 'disponible',    precio: 450 },
     { id: 'nivel-1',   codigo: 'ARCHIVO #LVL-001', nombre: 'Nivel 1: Zona Habitable',          estado: 'disponible',    precio: 550 },
     { id: 'nivel-2',   codigo: 'ARCHIVO #LVL-002', nombre: 'Nivel 2: Sueños de Tuberías',      estado: 'disponible',    precio: 580 },
-    { id: 'nivel-3',   codigo: 'ARCHIVO #LVL-003', nombre: 'Nivel 3: Estación Eléctrica',      estado: 'disponible',    precio: 680 },
+    { id: 'nivel-3',   codigo: 'ARCHIVO #LVL-FUN', nombre: 'Nivel =): Level Fun',              estado: 'disponible',    precio: 680 },
     { id: 'nivel-4',   codigo: 'ARCHIVO #LVL-004', nombre: 'Nivel 4: Oficina Abandonada',      estado: 'disponible',    precio: 480 },
     { id: 'nivel-5',   codigo: 'ARCHIVO #LVL-005', nombre: 'Nivel 5: Hotel del Terror',        estado: 'disponible',    precio: 650 },
     { id: 'nivel-37',  codigo: 'ARCHIVO #LVL-037', nombre: 'Nivel 37: Subliminal (Poolrooms)', estado: 'disponible',    precio: 620 },
@@ -154,6 +154,7 @@ const DB = (() => {
       }
     };
 
+    // Patrones de búsqueda (esquinas)
     [[0, 0], [0, size - 7], [size - 7, 0]].forEach(([fr, fc]) => {
       for (let dr = -1; dr <= 7; dr++) {
         for (let dc = -1; dc <= 7; dc++) {
@@ -163,6 +164,7 @@ const DB = (() => {
       }
     });
 
+    // Patrones de alineación
     const coords = alignCoords[ver];
     coords.forEach((ar) => {
       coords.forEach((ac) => {
@@ -175,11 +177,13 @@ const DB = (() => {
       });
     });
 
+    // Patrones de sincronización
     for (let i = 8; i < size - 8; i++) {
       setFunc(6, i, i % 2 === 0);
       setFunc(i, 6, i % 2 === 0);
     }
 
+    // Módulo oscuro y reserva de formato
     setFunc(size - 8, 8, true);
     for (let i = 0; i < 9; i++) {
       if (!func[8][i]) setFunc(8, i, false);
@@ -190,6 +194,7 @@ const DB = (() => {
       if (!func[size - 1 - i][8]) setFunc(size - 1 - i, 8, false);
     }
 
+    // Colocación en zig-zag + Máscara 0
     const dataBits = [];
     finalCw.forEach((byte) => {
       for (let b = 7; b >= 0; b--) dataBits.push((byte >> b) & 1);
@@ -214,6 +219,7 @@ const DB = (() => {
       dir *= -1;
     }
 
+    // Información de formato (ECC L + Máscara 0 = 0x77c4)
     const fmt = 0x77c4;
     const tlCoords = [
       [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8],
@@ -230,6 +236,7 @@ const DB = (() => {
       }
     }
 
+    // Construir SVG nítido con margen blanco (quiet zone de 4 módulos)
     const quiet = 4;
     const total = size + quiet * 2;
     let rects = '';
@@ -430,7 +437,7 @@ function sincronizarSitioPublico() {
     'nivel-0': ['nivel 0', 'vestíbulo', 'vestibulo'],
     'nivel-1': ['nivel 1', 'zona habitable'],
     'nivel-2': ['nivel 2', 'tuberías', 'tuberias'],
-    'nivel-3': ['nivel 3', 'estación eléctrica', 'estacion electrica'],
+    'nivel-3': ['nivel =)', 'level fun', 'lvl-fun', 'fiesta'],
     'nivel-4': ['nivel 4', 'oficina'],
     'nivel-5': ['nivel 5', 'hotel'],
     'nivel-37': ['nivel 37', 'subliminal', 'poolrooms'],
