@@ -24,7 +24,7 @@ body {
   line-height: 1.5;
 }
 
-/* ---------- Barra Superior ---------- */
+/* Barra superior */
 .barra-superior {
   display: flex;
   justify-content: space-between;
@@ -78,7 +78,7 @@ body {
   color: var(--amarillo);
 }
 
-/* ---------- Contenedores Principales ---------- */
+/* Contenedores principales */
 .panel {
   max-width: 1120px;
   margin: 0 auto;
@@ -135,7 +135,7 @@ body {
   gap: 12px;
 }
 
-/* ---------- Formularios e Inputs ---------- */
+/* Formularios e inputs */
 .campo {
   margin-bottom: 16px;
 }
@@ -214,7 +214,7 @@ textarea:focus {
   color: var(--rojo);
 }
 
-/* ---------- Alertas ---------- */
+/* Alertas */
 .respuesta {
   padding: 12px 14px;
   border-radius: 8px;
@@ -235,7 +235,7 @@ textarea:focus {
   color: #fca5a5;
 }
 
-/* ---------- Tablas y Estados ---------- */
+/* Tablas y estados */
 .tabla-envoltorio {
   overflow-x: auto;
   background: var(--tarjeta);
@@ -295,7 +295,7 @@ textarea:focus {
   border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
-/* ---------- Módulo de Métodos de Pago y Pase QR ---------- */
+/* Métodos de pago y pase QR */
 .metodos-pago-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -360,7 +360,7 @@ textarea:focus {
   color: var(--amarillo);
 }
 
-/* Tarjeta Ticket QR */
+/* Tarjeta ticket QR */
 .pase-qr-card {
   text-align: center;
   padding: 16px 8px;
@@ -395,7 +395,7 @@ textarea:focus {
   margin: 6px 0;
 }
 
-/* ---------- Modal y Tarjeta QR Responsiva para Celular ---------- */
+/* Modal y tarjeta QR responsiva */
 dialog,
 dialog#modalQR {
   width: min(92vw, 430px);
@@ -421,7 +421,7 @@ dialog#modalQR::backdrop {
   border-radius: 14px;
 }
 
-/* ---------- Menú Hamburguesa Interactivo (Versión Móvil) ---------- */
+/* Menú hamburguesa móvil */
 .btn-hamburguesa {
   display: none;
   flex-direction: column;
@@ -501,4 +501,75 @@ dialog#modalQR::backdrop {
   .fila-dos {
     grid-template-columns: 1fr;
   }
+}
+
+/* Contenedor y pestañas de acceso y registro */
+.contenedor {
+  max-width: 480px;
+  margin: 48px auto;
+  padding: 0 20px 60px;
+}
+
+.contenedor .tarjeta h1 {
+  margin: 0 0 6px;
+  font-size: 1.65rem;
+  color: var(--amarillo);
+  text-align: center;
+}
+
+.subtitulo {
+  margin: 0 0 22px;
+  color: var(--gris);
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.tabs-auth {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 6px;
+  margin-bottom: 22px;
+  background: #0d0c09;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.tab-btn {
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--gris);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: var(--amarillo);
+  background: rgba(230, 198, 76, 0.08);
+}
+
+.tab-btn.activo {
+  background: var(--amarillo);
+  color: #090806;
+  border-color: var(--amarillo);
+}
+
+.error {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f87171;
+}
+
+input.invalido {
+  border-color: var(--rojo);
+}
+
+input.valido {
+  border-color: var(--verde);
 }
