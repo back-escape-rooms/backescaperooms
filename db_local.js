@@ -31,6 +31,11 @@ const DB = (() => {
     }
   ];
 
+  function normalizarTelefono10(tel) {
+    const digitos = String(tel || '').replace(/\D/g, '');
+    return digitos.length > 10 ? digitos.slice(-10) : digitos;
+  }
+
   function init() {
     if (!localStorage.getItem(KEYS.USUARIOS)) {
       localStorage.setItem(KEYS.USUARIOS, JSON.stringify(USUARIOS_INICIALES));
@@ -149,18 +154,15 @@ const DB = (() => {
       }
     };
 
-    // Patrones de búsqueda (esquinas)
     [[0, 0], [0, size - 7], [size - 7, 0]].forEach(([fr, fc]) => {
       for (let dr = -1; dr <= 7; dr++) {
         for (let dc = -1; dc <= 7; dc++) {
           const inOuter = (dr >= 0 && dr <= 6 && (dc === 0 || dc === 6)) || (dc >= 0 && dc <= 6 && (dr === 0 || dr === 6));
-          const inInner = dr >= 2 && dr <= 4 && dc >= 2 && dc === 4;
           setFunc(fr + dr, fc + dc, inOuter || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4));
         }
       }
     });
 
-    // Patrones de alineación
     const coords = alignCoords[ver];
     coords.forEach((ar) => {
       coords.forEach((ac) => {
@@ -173,13 +175,11 @@ const DB = (() => {
       });
     });
 
-    // Patrones de sincronización
     for (let i = 8; i < size - 8; i++) {
       setFunc(6, i, i % 2 === 0);
       setFunc(i, 6, i % 2 === 0);
     }
 
-    // Módulo oscuro y reserva de formato
     setFunc(size - 8, 8, true);
     for (let i = 0; i < 9; i++) {
       if (!func[8][i]) setFunc(8, i, false);
@@ -190,7 +190,6 @@ const DB = (() => {
       if (!func[size - 1 - i][8]) setFunc(size - 1 - i, 8, false);
     }
 
-    // Colocación en zig-zag + Máscara 0
     const dataBits = [];
     finalCw.forEach((byte) => {
       for (let b = 7; b >= 0; b--) dataBits.push((byte >> b) & 1);
@@ -215,7 +214,6 @@ const DB = (() => {
       dir *= -1;
     }
 
-    // Información de formato (ECC L + Máscara 0 = 0x77c4)
     const fmt = 0x77c4;
     const tlCoords = [
       [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8],
@@ -232,7 +230,6 @@ const DB = (() => {
       }
     }
 
-    // Construir SVG nítido con margen blanco (quiet zone de 4 módulos)
     const quiet = 4;
     const total = size + quiet * 2;
     let rects = '';
@@ -254,18 +251,26 @@ const DB = (() => {
     },
     registrar(nombre, telefono, correo, password) {
       const usuarios = this.getUsuarios();
-      const correoNorm = correo.trim().toLowerCase();
-      if (usuarios.some((u) => u.correo.toLowerCase() === correoNorm)) {
-        return { exito: false, mensaje: 'Este correo ya está registrado. Inicia sesión.' };
+      const correoNorm = String(correo || '').trim().toLowerCase();
+      const telNorm = normalizarTelefono10(telefono);
+
+      if (usuarios.some((u) => String(u.correo || '').trim().toLowerCase() === correoNorm)) {
+        return {
+          exito: false,
+          yaExiste: true,
+          mensaje: 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.'
+        };
       }
+
       const nuevo = {
         id: Date.now(),
-        nombre: nombre.trim(),
-        telefono: telefono.trim(),
+        nombre: String(nombre || '').trim(),
+        telefono: telNorm,
         correo: correoNorm,
-        password,
+        password: String(password || ''),
         rol: 'cliente'
       };
+
       usuarios.push(nuevo);
       localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
       localStorage.setItem(KEYS.SESION, JSON.stringify({
@@ -277,9 +282,10 @@ const DB = (() => {
       return { exito: true, mensaje: 'Registro previo completado. Redirigiendo...', rol: 'cliente' };
     },
     login(correo, password) {
-      const correoNorm = correo.trim().toLowerCase();
+      const correoNorm = String(correo || '').trim().toLowerCase();
+      const passStr = String(password || '');
       const usuario = this.getUsuarios().find(
-        (u) => u.correo.toLowerCase() === correoNorm && u.password === password
+        (u) => String(u.correo || '').trim().toLowerCase() === correoNorm && u.password === passStr
       );
       if (!usuario) {
         return { exito: false, mensaje: 'Correo o contraseña incorrectos.' };
@@ -295,17 +301,23 @@ const DB = (() => {
     },
     recuperarPassword(correo, telefono, nuevaPassword) {
       const usuarios = this.getUsuarios();
-      const correoNorm = correo.trim().toLowerCase();
-      const telLimpio = telefono.replace(/\D/g, '');
-      const indice = usuarios.findIndex(
-        (u) => u.correo.toLowerCase() === correoNorm && String(u.telefono || '').replace(/\D/g, '') === telLimpio
+      const correoNorm = String(correo || '').trim().toLowerCase();
+      const telLimpio = normalizarTelefono10(telefono);
+
+      const usuario = usuarios.find(
+        (u) => String(u.correo || '').trim().toLowerCase() === correoNorm
       );
 
-      if (indice === -1) {
-        return { exito: false, mensaje: 'El correo o teléfono no coinciden con ninguna cuenta registrada.' };
+      if (!usuario) {
+        return { exito: false, mensaje: 'No existe ninguna cuenta registrada con ese correo.' };
       }
 
-      usuarios[indice].password = nuevaPassword;
+      const telGuardado = normalizarTelefono10(usuario.telefono);
+      if (telGuardado !== telLimpio) {
+        return { exito: false, mensaje: 'El teléfono ingresado no coincide con el registrado en esta cuenta.' };
+      }
+
+      usuario.password = String(nuevaPassword || '');
       localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
       return { exito: true, mensaje: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
     },
