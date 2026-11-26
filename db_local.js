@@ -293,6 +293,22 @@ const DB = (() => {
       const destino = usuario.rol === 'admin' ? 'Panel de Administración' : 'Portal de Cliente';
       return { exito: true, mensaje: `Bienvenido, ${usuario.nombre}. Abriendo ${destino}...`, rol: usuario.rol };
     },
+    recuperarPassword(correo, telefono, nuevaPassword) {
+      const usuarios = this.getUsuarios();
+      const correoNorm = correo.trim().toLowerCase();
+      const telLimpio = telefono.replace(/\D/g, '');
+      const indice = usuarios.findIndex(
+        (u) => u.correo.toLowerCase() === correoNorm && String(u.telefono || '').replace(/\D/g, '') === telLimpio
+      );
+
+      if (indice === -1) {
+        return { exito: false, mensaje: 'El correo o teléfono no coinciden con ninguna cuenta registrada.' };
+      }
+
+      usuarios[indice].password = nuevaPassword;
+      localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
+      return { exito: true, mensaje: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
+    },
     getSesion() {
       return JSON.parse(localStorage.getItem(KEYS.SESION));
     },
