@@ -49,7 +49,43 @@
           <span class="spinner" aria-hidden="true" hidden><i></i><i></i><i></i></span>
         </button>
 
+        <p style="text-align:center; margin-top:12px; margin-bottom:0;">
+          <a href="#" id="linkOlvidePass" style="color:var(--amarillo); font-size:0.88rem; text-decoration:underline;">¿Olvidaste tu contraseña?</a>
+        </p>
+
         <p class="respuesta" id="respLogin" role="status" hidden></p>
+      </form>
+
+      <form id="formRecuperar" novalidate hidden>
+        <p style="color:var(--gris); font-size:0.9rem; margin-top:0;">
+          Ingresa tu correo y el teléfono con el que te registraste para restablecer tu contraseña.
+        </p>
+
+        <div class="campo">
+          <label for="recCorreo">Correo electrónico registrado</label>
+          <input type="email" id="recCorreo" placeholder="explorador@dominio.com" autocomplete="email" required>
+          <p class="error" id="errorRecCorreo" role="alert" hidden></p>
+        </div>
+
+        <div class="campo">
+          <label for="recTelefono">Teléfono registrado</label>
+          <input type="tel" id="recTelefono" placeholder="4771234567" maxlength="20" autocomplete="tel" required>
+        </div>
+
+        <div class="campo">
+          <label for="recNuevaPass">Nueva contraseña (mínimo 6 caracteres)</label>
+          <input type="password" id="recNuevaPass" placeholder="Escribe tu nueva contraseña" minlength="6" autocomplete="new-password" required>
+        </div>
+
+        <button type="submit" class="boton" id="btnRecuperar">
+          <span class="boton-texto">Restablecer Contraseña</span>
+        </button>
+
+        <p style="text-align:center; margin-top:12px; margin-bottom:0;">
+          <a href="#" id="linkVolverLogin" style="color:var(--gris); font-size:0.88rem; text-decoration:underline;">&larr; Volver a Iniciar Sesión</a>
+        </p>
+
+        <p class="respuesta" id="respRecuperar" role="status" hidden></p>
       </form>
 
       <form id="formRegistro" novalidate hidden>
