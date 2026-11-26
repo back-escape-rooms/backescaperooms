@@ -64,10 +64,10 @@
 
         <div class="campo" style="margin-bottom:14px;">
           <label for="codigo_descuento">Código de descuento / promoción (opcional)</label>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <p style="display:flex; gap:8px; flex-wrap:wrap; margin:0;">
             <input type="text" id="codigo_descuento" placeholder="Ej. NOCLIP20 o ESCUADRON15" style="flex:1; min-width:190px; text-transform:uppercase;">
             <button type="button" id="btnAplicarCupon" class="btn-mini" style="border-color:var(--amarillo); color:var(--amarillo); padding:10px 16px;">Aplicar Código</button>
-          </div>
+          </p>
           <small id="msgCupon" style="display:block; margin-top:6px; color:var(--gris);"></small>
         </div>
 
@@ -78,8 +78,8 @@
         </div>
 
         <!-- SELECCIÓN DE MÉTODO DE PAGO -->
-        <div class="campo">
-          <label>2. Método de Pago</label>
+        <fieldset class="campo" style="border:0; padding:0; margin:0 0 18px;">
+          <legend style="font-size:0.875rem; font-weight:700; margin-bottom:8px;">2. Método de Pago</legend>
           <div class="metodos-pago-grid">
             <label class="metodo-opcion">
               <input type="radio" name="metodo_pago" value="tarjeta" checked>
@@ -94,7 +94,7 @@
               <span>Pago en Sucursal</span>
             </label>
           </div>
-        </div>
+        </fieldset>
 
         <!-- DETALLES DINÁMICOS SEGÚN EL MÉTODO DE PAGO -->
         <div id="boxTarjeta" class="caja-detalle-pago">
@@ -167,9 +167,9 @@
       <h3 id="qrTituloSala" style="margin:12px 0 4px;">Nivel 0</h3>
       <p id="qrCodigoTexto" style="margin:0; color:var(--amarillo); font-family:monospace; font-weight:700;"></p>
 
-      <div class="pase-qr-marco">
-        <img id="imgCodigoQR" src="" alt="Código QR de acceso a la sala">
-      </div>
+      <figure class="pase-qr-marco">
+        <img id="imgCodigoQR" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Código QR de acceso a la sala">
+      </figure>
 
       <div class="pase-datos-lista" id="qrDetalles"></div>
 
@@ -181,6 +181,8 @@
   </dialog>
 
   <script>
+    'use strict';
+
     const sesion = DB.getSesion();
     if (!sesion) window.location.href = 'acceso.html';
     if (sesion && sesion.rol === 'admin') window.location.href = 'admin.html';
@@ -191,7 +193,6 @@
       DB.logout();
     });
 
-    // Fecha mínima = hoy
     const inputFecha = document.getElementById('fecha_cita');
     inputFecha.min = new Date().toISOString().split('T')[0];
 
@@ -270,7 +271,6 @@
     inputPersonas.addEventListener('input', actualizarTotal);
     actualizarTotal();
 
-    // Alternar paneles de método de pago
     const radiosPago = document.querySelectorAll('input[name="metodo_pago"]');
     radiosPago.forEach((radio) => {
       radio.addEventListener('change', () => {
@@ -280,13 +280,11 @@
       });
     });
 
-    // Formateo automático del número de tarjeta
     document.getElementById('cardNumero').addEventListener('input', (e) => {
       const limpio = e.target.value.replace(/\D/g, '').slice(0, 16);
       e.target.value = limpio.replace(/(.{4})/g, '$1 ').trim();
     });
 
-    // Función para abrir el modal con el Código QR escaneable
     const modalQR = document.getElementById('modalQR');
     document.getElementById('btnCerrarQR').addEventListener('click', () => modalQR.close());
 
