@@ -6,7 +6,7 @@
   <title>Reservas y Contacto | Back Escape Rooms</title>
   <link rel="stylesheet" href="auth_admin.css">
   <script src="db_local.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <header class="barra-superior">
@@ -79,10 +79,10 @@
 
         <section class="campo" style="margin-bottom:14px;">
           <label for="codigo_descuento">Código de descuento / promoción (opcional)</label>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <p style="display:flex; gap:8px; flex-wrap:wrap; margin:0;">
             <input type="text" id="codigo_descuento" placeholder="Ej. NOCLIP20 o ESCUADRON15" style="flex:1; min-width:190px; text-transform:uppercase;">
             <button type="button" id="btnAplicarCupon" class="btn-mini" style="border-color:var(--amarillo); color:var(--amarillo); padding:10px 16px;">Aplicar Código</button>
-          </div>
+          </p>
           <small id="msgCupon" style="display:block; margin-top:6px; color:var(--gris);"></small>
         </section>
 
@@ -151,7 +151,7 @@
         <button type="submit" class="boton" style="max-width:330px;">Confirmar Pago y Generar QR</button>
       </form>
 
-      <!-- PASE QR VISIBLE DIRECTAMENTE EN PANTALLA (100% COMPATIBLE CON CELULAR) -->
+      <!-- PASE QR VISIBLE DIRECTAMENTE EN PANTALLA -->
       <section id="resultadoPaseQR" class="pase-inline-box" hidden>
         <article class="pase-qr-card">
           <span class="insignia-lvl">PASE DE ACCESO M.E.G.</span>
@@ -159,7 +159,7 @@
           <p id="qrCodigoTexto" style="margin:0; color:var(--amarillo); font-family:monospace; font-weight:700;"></p>
 
           <figure class="pase-qr-marco">
-            <img id="imgCodigoQR" src="" alt="Código QR de acceso a la sala">
+            <img id="imgCodigoQR" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Código QR de acceso a la sala">
           </figure>
 
           <section class="pase-datos-lista" id="qrDetalles"></section>
@@ -167,7 +167,7 @@
           <p class="respuesta" id="estadoEnvioCorreo" role="status" hidden style="margin-bottom:14px;"></p>
 
           <nav style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-            <a id="btnDescargarQR" download="Pase_BackEscapeRooms.svg" class="btn-mini" style="background:var(--amarillo); color:#000; border-color:var(--amarillo); text-decoration:none;">Descargar Pase QR</a>
+            <a id="btnDescargarQR" href="#resultadoPaseQR" download="Pase_BackEscapeRooms.svg" class="btn-mini" style="background:var(--amarillo); color:#000; border-color:var(--amarillo); text-decoration:none;">Descargar Pase QR</a>
             <button type="button" id="btnReenviarQR" class="btn-mini">Reenviar QR al Correo</button>
             <button type="button" class="btn-mini" onclick="window.print()">Imprimir / PDF</button>
           </nav>
@@ -183,13 +183,13 @@
           ¿Tienes dudas sobre el nivel de intensidad, grupos escolares, eventos privados o empresas? Contáctanos por cualquiera de nuestros canales oficiales.
         </p>
 
-        <div class="pase-datos-lista" style="margin:0;">
+        <section class="pase-datos-lista" style="margin:0;">
           <p><strong style="color:var(--amarillo);">Ubicación:</strong> Blvd. Adolfo López Mateos #1420, Col. Centro, C.P. 37000, León, Guanajuato, México.</p>
           <p><strong style="color:var(--amarillo);">Teléfono / WhatsApp:</strong> <a href="tel:+524771234567" style="color:inherit; text-decoration:underline;">+52 (477) 123 4567</a></p>
           <p><strong style="color:var(--amarillo);">Correo electrónico:</strong> <a href="mailto:contacto@backescaperooms.mx" style="color:inherit; text-decoration:underline;">contacto@backescaperooms.mx</a></p>
           <p><strong style="color:var(--amarillo);">Horario de atención:</strong> Martes a Domingo de 14:00 a 23:00 hrs.</p>
           <p><strong style="color:var(--amarillo);">Protocolo de ingreso:</strong> Llegar 15 minutos antes de la hora agendada con su Pase QR.</p>
-        </div>
+        </section>
       </article>
 
       <article class="tarjeta" style="margin-bottom:0;">
@@ -231,9 +231,6 @@
   <script>
     'use strict';
 
-    // =========================================================
-    // CREDENCIALES EMAILJS CONFIGURADAS
-    // =========================================================
     const EMAILJS_CONFIG = {
       PUBLIC_KEY: 'Tz-JRccC_RmAuIS8S',
       SERVICE_ID: 'service_qusa0vo',
@@ -278,51 +275,11 @@
       alertaContacto.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    function cargarSalasDisponibles(verificarParametroUrl = false) {
-      const todas = DB.getSalas();
-      const disponibles = todas.filter((s) => s.estado === 'disponible');
-      const valorAnterior = selectSala.value;
-
-      selectSala.innerHTML = '';
-
-      if (disponibles.length === 0) {
-        selectSala.add(new Option('No hay salas disponibles en este momento', ''));
-        btnConfirmar.disabled = true;
-        btnConfirmar.style.opacity = '0.5';
-        mostrarAlerta('Todas las salas se encuentran cerradas o en mantenimiento temporalmente.', false);
-        return;
-      }
-
-      btnConfirmar.disabled = false;
-      btnConfirmar.style.opacity = '1';
-
-      disponibles.forEach((s) => {
-        const opt = new Option(`${s.nombre} — $${s.precio} MXN / pers.`, s.id);
-        opt.dataset.precio = s.precio;
-        if (s.id === salaPreseleccionada || s.id === valorAnterior) opt.selected = true;
-        selectSala.add(opt);
-      });
-
-      if (verificarParametroUrl && salaPreseleccionada) {
-        const salaBuscada = todas.find((s) => s.id === salaPreseleccionada);
-        if (salaBuscada && salaBuscada.estado !== 'disponible') {
-          mostrarAlerta(
-            `Aviso: ${salaBuscada.nombre} está actualmente ${salaBuscada.estado === 'mantenimiento' ? 'en mantenimiento' : 'cerrada'} y no admite reservaciones. Elige otra sala disponible.`,
-            false
-          );
-        }
-      }
-
-      actualizarTotal();
-    }
-
     function evaluarCupon(silencioso = false) {
       const raw = inputCupon.value.trim();
       if (!raw) {
         cuponActivo = null;
-        if (!silencioso) {
-          msgCupon.textContent = '';
-        }
+        if (!silencioso) msgCupon.textContent = '';
         return;
       }
       const res = DB.validarCupon(raw, {
@@ -359,6 +316,44 @@
         document.getElementById('desglosePrecio').textContent = `$${precio} MXN × ${cant} jugadores`;
       }
       document.getElementById('totalPagar').textContent = `$${total.toLocaleString('es-MX')} MXN`;
+    }
+
+    function cargarSalasDisponibles(verificarParametroUrl = false) {
+      const todas = DB.getSalas();
+      const disponibles = todas.filter((s) => s.estado === 'disponible');
+      const valorAnterior = selectSala.value;
+
+      selectSala.innerHTML = '';
+
+      if (disponibles.length === 0) {
+        selectSala.add(new Option('No hay salas disponibles en este momento', ''));
+        btnConfirmar.disabled = true;
+        btnConfirmar.style.opacity = '0.5';
+        mostrarAlerta('Todas las salas se encuentran cerradas o en mantenimiento temporalmente.', false);
+        return;
+      }
+
+      btnConfirmar.disabled = false;
+      btnConfirmar.style.opacity = '1';
+
+      disponibles.forEach((s) => {
+        const opt = new Option(`${s.nombre} — $${s.precio} MXN / pers.`, s.id);
+        opt.dataset.precio = s.precio;
+        if (s.id === salaPreseleccionada || s.id === valorAnterior) opt.selected = true;
+        selectSala.add(opt);
+      });
+
+      if (verificarParametroUrl && salaPreseleccionada) {
+        const salaBuscada = todas.find((s) => s.id === salaPreseleccionada);
+        if (salaBuscada && salaBuscada.estado !== 'disponible') {
+          mostrarAlerta(
+            `Aviso: ${salaBuscada.nombre} está actualmente ${salaBuscada.estado === 'mantenimiento' ? 'en mantenimiento' : 'cerrada'} y no admite reservaciones. Elige otra sala disponible.`,
+            false
+          );
+        }
+      }
+
+      actualizarTotal();
     }
 
     if (cuponUrl) {
@@ -424,6 +419,8 @@
       } catch (err) {
         console.error('Error EmailJS:', err);
         estadoEnvio.textContent = `Error de EmailJS (${err.status || 'Red'}): ${err.text || 'Revisa permisos de Gmail o bloqueador de anuncios'}`;
+      } finally {
+        btnReenviar.disabled = false;
       }
     }
 
@@ -452,10 +449,7 @@
         `TOTAL:$${cita.total}`
       ].join('|');
 
-      // SVG local instantáneo para vista previa y descarga en pantalla
       const dataUrlQR = DB.generarQRDataURL(textoQR);
-
-      // URL HTTPS compatible con Gmail/Outlook para incrustar el QR dentro del correo
       const qrHttpsUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(textoQR)}`;
 
       document.getElementById('imgCodigoQR').src = dataUrlQR;
