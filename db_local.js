@@ -1,11 +1,22 @@
 'use strict';
 
-/* db_local.js — Base de datos local, generador QR nativo, pagos y sincronización */
+/* ==========================================================================
+   CONFIGURACIÓN DE SUPABASE (PEGA AQUÍ TUS DOS LLAVES DEL PASO 2)
+   ========================================================================== */
+const SUPABASE_URL = 'https://oigmgbwsilpbxuveckie.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ants-nNZXe5FvXrySmEUDQ_Tr7UKx1d';
+
+const supabaseClient = (window.supabase && SUPABASE_URL.startsWith('http'))
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+/* db_local.js — Base de datos conectada a Supabase, generador QR nativo y sincronización */
 const DB = (() => {
   const KEYS = {
     USUARIOS: 'ber_usuarios_v1',
     SALAS: 'ber_salas_v1',
     CITAS: 'ber_citas_v1',
+    PROMOS: 'ber_promos_v1',
     SESION: 'ber_sesion_v1'
   };
 
@@ -44,6 +55,41 @@ const DB = (() => {
   }
 
   init();
+
+  /* Sincronización automática en segundo plano con Supabase */
+  async function sincronizarDesdeNube() {
+    if (!supabaseClient) return;
+    try {
+      const [resSalas, resUsuarios, resCitas, resPromos] = await Promise.all([
+        supabaseClient.from('salas').select('*'),
+        supabaseClient.from('usuarios').select('*'),
+        supabaseClient.from('citas').select('*').order('id', { ascending: true }),
+        supabaseClient.from('promociones').select('*')
+      ]);
+
+      if (resSalas.data && resSalas.data.length > 0) {
+        localStorage.setItem(KEYS.SALAS, JSON.stringify(resSalas.data));
+      }
+      if (resUsuarios.data && resUsuarios.data.length > 0) {
+        localStorage.setItem(KEYS.USUARIOS, JSON.stringify(resUsuarios.data));
+      }
+      if (resCitas.data) {
+        localStorage.setItem(KEYS.CITAS, JSON.stringify(resCitas.data));
+      }
+      if (resPromos.data && resPromos.data.length > 0) {
+        localStorage.setItem(KEYS.PROMOS, JSON.stringify(resPromos.data));
+      }
+
+      if (typeof sincronizarSitioPublico === 'function') {
+        sincronizarSitioPublico();
+      }
+      window.dispatchEvent(new CustomEvent('ber-db-sincronizada'));
+    } catch (err) {
+      console.warn('Aviso de sincronización Supabase:', err.message);
+    }
+  }
+
+  sincronizarDesdeNube();
 
   /* Generador nativo de Código QR escaneable (Versiones 1–6, ECC L, Byte Mode) */
   function generarQRDataURL(texto) {
@@ -149,18 +195,15 @@ const DB = (() => {
       }
     };
 
-    // Patrones de búsqueda (esquinas)
     [[0, 0], [0, size - 7], [size - 7, 0]].forEach(([fr, fc]) => {
       for (let dr = -1; dr <= 7; dr++) {
         for (let dc = -1; dc <= 7; dc++) {
           const inOuter = (dr >= 0 && dr <= 6 && (dc === 0 || dc === 6)) || (dc >= 0 && dc <= 6 && (dr === 0 || dr === 6));
-          const inInner = dr >= 2 && dr <= 4 && dc >= 2 && dc === 4;
           setFunc(fr + dr, fc + dc, inOuter || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4));
         }
       }
     });
 
-    // Patrones de alineación
     const coords = alignCoords[ver];
     coords.forEach((ar) => {
       coords.forEach((ac) => {
@@ -173,13 +216,11 @@ const DB = (() => {
       });
     });
 
-    // Patrones de sincronización
     for (let i = 8; i < size - 8; i++) {
       setFunc(6, i, i % 2 === 0);
       setFunc(i, 6, i % 2 === 0);
     }
 
-    // Módulo oscuro y reserva de formato
     setFunc(size - 8, 8, true);
     for (let i = 0; i < 9; i++) {
       if (!func[8][i]) setFunc(8, i, false);
@@ -190,7 +231,6 @@ const DB = (() => {
       if (!func[size - 1 - i][8]) setFunc(size - 1 - i, 8, false);
     }
 
-    // Colocación en zig-zag + Máscara 0
     const dataBits = [];
     finalCw.forEach((byte) => {
       for (let b = 7; b >= 0; b--) dataBits.push((byte >> b) & 1);
@@ -215,7 +255,6 @@ const DB = (() => {
       dir *= -1;
     }
 
-    // Información de formato (ECC L + Máscara 0 = 0x77c4)
     const fmt = 0x77c4;
     const tlCoords = [
       [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8],
@@ -232,7 +271,6 @@ const DB = (() => {
       }
     }
 
-    // Construir SVG nítido con margen blanco (quiet zone de 4 módulos)
     const quiet = 4;
     const total = size + quiet * 2;
     let rects = '';
@@ -295,27 +333,35 @@ const DB = (() => {
     if (!code) {
       return { valida: false, mensaje: 'Ingresa un código promocional.' };
     }
-    const promo = PROMOCIONES[code];
+    const promosNube = JSON.parse(localStorage.getItem(KEYS.PROMOS)) || [];
+    const promoDb = promosNube.find((p) => String(p.codigo).toUpperCase() === code);
+    const promo = PROMOCIONES[code] || promoDb;
+
     if (!promo) {
       return { valida: false, mensaje: `El código "${code}" no es válido.` };
     }
-    if (!promo.activa) {
+    const estaActiva = promoDb ? Boolean(promoDb.activa) : Boolean(promo.activa);
+    if (!estaActiva) {
       return { valida: false, mensaje: `El código "${code}" ha expirado o está inactivo.` };
     }
     if (typeof promo.validar === 'function') {
       const check = promo.validar(datos);
       if (!check.valida) return check;
     }
+    const porcentaje = promoDb ? Number(promoDb.porcentaje) : promo.porcentaje;
+    const nombre = promoDb ? promoDb.nombre : promo.nombre;
     return {
       valida: true,
-      codigo: promo.codigo,
-      nombre: promo.nombre,
-      porcentaje: promo.porcentaje,
-      mensaje: `Cupón ${promo.codigo} aplicado: ${promo.porcentaje}% de descuento.`
+      codigo: code,
+      nombre,
+      porcentaje,
+      mensaje: `Cupón ${code} aplicado: ${porcentaje}% de descuento.`
     };
   }
 
   return {
+    supabase: supabaseClient,
+    sincronizarDesdeNube,
     generarQRDataURL,
     validarCupon,
     getUsuarios() {
@@ -343,7 +389,28 @@ const DB = (() => {
         correo: nuevo.correo,
         rol: nuevo.rol
       }));
-      return { exito: true, mensaje: 'Registro previo completado. Redirigiendo...', rol: 'cliente' };
+
+      if (supabaseClient) {
+        supabaseClient.from('usuarios').insert([{
+          nombre: nuevo.nombre,
+          telefono: nuevo.telefono,
+          correo: nuevo.correo,
+          password: nuevo.password,
+          rol: 'cliente'
+        }]).select().then(({ data }) => {
+          if (data && data[0]) {
+            localStorage.setItem(KEYS.SESION, JSON.stringify({
+              id: data[0].id,
+              nombre: data[0].nombre,
+              correo: data[0].correo,
+              rol: data[0].rol
+            }));
+          }
+          sincronizarDesdeNube();
+        });
+      }
+
+      return { exito: true, mensaje: 'Registro completado. Redirigiendo...', rol: 'cliente' };
     },
     login(correo, password) {
       const correoNorm = correo.trim().toLowerCase();
@@ -373,10 +440,20 @@ const DB = (() => {
       return JSON.parse(localStorage.getItem(KEYS.SALAS)) || SALAS_INICIALES;
     },
     actualizarSala(id, estado, precio) {
+      const precioNum = Number(precio);
       const salas = this.getSalas().map((s) =>
-        s.id === id ? { ...s, estado, precio: Number(precio) } : s
+        s.id === id ? { ...s, estado, precio: precioNum } : s
       );
       localStorage.setItem(KEYS.SALAS, JSON.stringify(salas));
+
+      if (supabaseClient) {
+        supabaseClient
+          .from('salas')
+          .update({ estado, precio: precioNum })
+          .eq('id', id)
+          .then(() => sincronizarDesdeNube());
+      }
+
       return { exito: true, mensaje: `Sala (${id}) actualizada a: ${estado.toUpperCase()}.` };
     },
     getCitas() {
@@ -415,7 +492,7 @@ const DB = (() => {
         descuentoMonto = Math.round(subtotal * (resCupon.porcentaje / 100));
       }
       const total = Math.max(0, subtotal - descuentoMonto);
-      const nuevoId = citas.length > 0 ? Math.max(...citas.map((c) => c.id)) + 1 : 101;
+      const nuevoId = citas.length > 0 ? Math.max(...citas.map((c) => Number(c.id) || 0)) + 1 : 101;
       const metodoPago = datos.metodo_pago || 'sucursal';
 
       let estadoPago = 'pendiente_sucursal';
@@ -445,9 +522,20 @@ const DB = (() => {
 
       citas.push(nueva);
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
+
+      if (supabaseClient) {
+        const filaSupabase = { ...nueva };
+        delete filaSupabase.id;
+        supabaseClient
+          .from('citas')
+          .insert([filaSupabase])
+          .then(() => sincronizarDesdeNube());
+      }
+
       return { exito: true, mensaje: `Reservación #${nueva.id} generada con pase QR.`, cita: nueva };
     },
     reprogramarCita(id, salaId, fecha, hora) {
+      const nuevoQr = `BER-${id}-${salaId.toUpperCase()}`;
       const citas = this.getCitas().map((c) =>
         c.id === Number(id)
           ? {
@@ -455,12 +543,27 @@ const DB = (() => {
               sala_id: salaId,
               fecha_cita: fecha,
               hora_cita: hora,
-              codigo_qr: `BER-${id}-${salaId.toUpperCase()}`,
+              codigo_qr: nuevoQr,
               estado_cita: 'reprogramada'
             }
           : c
       );
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
+
+      if (supabaseClient) {
+        supabaseClient
+          .from('citas')
+          .update({
+            sala_id: salaId,
+            fecha_cita: fecha,
+            hora_cita: hora,
+            codigo_qr: nuevoQr,
+            estado_cita: 'reprogramada'
+          })
+          .eq('id', Number(id))
+          .then(() => sincronizarDesdeNube());
+      }
+
       return { exito: true, mensaje: `Cita #${id} reprogramada y código QR actualizado.` };
     },
     cambiarEstadoCita(id, estado) {
@@ -468,6 +571,15 @@ const DB = (() => {
         c.id === Number(id) ? { ...c, estado_cita: estado } : c
       );
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
+
+      if (supabaseClient) {
+        supabaseClient
+          .from('citas')
+          .update({ estado_cita: estado })
+          .eq('id', Number(id))
+          .then(() => sincronizarDesdeNube());
+      }
+
       return { exito: true, mensaje: `Cita #${id} marcada como ${estado.toUpperCase()}.` };
     },
     marcarPagado(id) {
@@ -475,7 +587,22 @@ const DB = (() => {
         c.id === Number(id) ? { ...c, estado_pago: 'pagado', estado_cita: 'confirmada' } : c
       );
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
+
+      if (supabaseClient) {
+        supabaseClient
+          .from('citas')
+          .update({ estado_pago: 'pagado', estado_cita: 'confirmada' })
+          .eq('id', Number(id))
+          .then(() => sincronizarDesdeNube());
+      }
+
       return { exito: true, mensaje: `Pago de la cita #${id} confirmado.` };
+    },
+    enviarMensajeContacto(datos) {
+      if (supabaseClient) {
+        supabaseClient.from('mensajes_contacto').insert([datos]).then(() => {});
+      }
+      return { exito: true, mensaje: 'Mensaje enviado correctamente.' };
     }
   };
 })();
