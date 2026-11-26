@@ -31,6 +31,9 @@ if (linkOlvidePass && formRecuperar) {
     formRegistro.hidden = true;
     formRecuperar.hidden = false;
     document.getElementById('respRecuperar').hidden = true;
+    if (loginCorreo.value.trim()) {
+      recCorreo.value = loginCorreo.value.trim();
+    }
   });
 }
 
@@ -78,8 +81,12 @@ function mostrarRespuesta(caja, texto, exito) {
   caja.hidden = false;
 }
 
+let procesandoAuth = false;
+
 formLogin.addEventListener('submit', (e) => {
   e.preventDefault();
+  if (procesandoAuth) return;
+
   const resp = document.getElementById('respLogin');
   const passInput = document.getElementById('loginPass');
   resp.hidden = true;
@@ -97,6 +104,8 @@ formLogin.addEventListener('submit', (e) => {
   mostrarRespuesta(resp, resultado.mensaje, resultado.exito);
 
   if (resultado.exito) {
+    procesandoAuth = true;
+    document.getElementById('btnLogin').disabled = true;
     setTimeout(() => {
       window.location.href = resultado.rol === 'admin' ? 'admin.html' : 'mis_reservas.html';
     }, 550);
@@ -112,18 +121,29 @@ if (formRecuperar) {
     resp.hidden = true;
 
     const correoOk = validarCampoCorreo(recCorreo, errorRecCorreo);
-    const telOk = telInput.value.replace(/\D/g, '').length >= 7;
+    const digitosTel = telInput.value.replace(/\D/g, '');
+    const telOk = digitosTel.length === 10;
     const passOk = passInput.value.length >= 6;
 
     telInput.classList.toggle('invalido', !telOk);
     passInput.classList.toggle('invalido', !passOk);
 
-    if (!correoOk || !telOk || !passOk) {
-      mostrarRespuesta(resp, 'Completa los datos correctamente (nueva contraseña mínimo 6 caracteres).', false);
+    if (!correoOk) {
+      mostrarRespuesta(resp, 'Ingresa un correo electrónico válido.', false);
       return;
     }
 
-    const resultado = DB.recuperarPassword(recCorreo.value, telInput.value, passInput.value);
+    if (!telOk) {
+      mostrarRespuesta(resp, 'Ingresa los 10 dígitos del teléfono registrado.', false);
+      return;
+    }
+
+    if (!passOk) {
+      mostrarRespuesta(resp, 'La nueva contraseña debe tener al menos 6 caracteres.', false);
+      return;
+    }
+
+    const resultado = DB.recuperarPassword(recCorreo.value, digitosTel, passInput.value);
     mostrarRespuesta(resp, resultado.mensaje, resultado.exito);
 
     if (resultado.exito) {
@@ -140,14 +160,17 @@ if (formRecuperar) {
 
 formRegistro.addEventListener('submit', (e) => {
   e.preventDefault();
+  if (procesandoAuth) return;
+
   const resp = document.getElementById('respRegistro');
   const nombre = document.getElementById('regNombre');
   const telefono = document.getElementById('regTelefono');
   const pass = document.getElementById('regPass');
   resp.hidden = true;
 
-  const nombreOk = nombre.value.trim() !== '';
-  const telOk = telefono.value.trim().length >= 7;
+  const nombreOk = nombre.value.trim().length >= 3;
+  const digitosTel = telefono.value.replace(/\D/g, '');
+  const telOk = digitosTel.length === 10;
   const correoOk = validarCampoCorreo(regCorreo, errorRegCorreo);
   const passOk = pass.value.length >= 6;
 
@@ -155,18 +178,42 @@ formRegistro.addEventListener('submit', (e) => {
   telefono.classList.toggle('invalido', !telOk);
   pass.classList.toggle('invalido', !passOk);
 
-  if (!nombreOk || !telOk || !correoOk || !passOk) {
-    mostrarRespuesta(resp, 'Completa todos los campos (contraseña mínimo 6 caracteres).', false);
+  if (!nombreOk) {
+    mostrarRespuesta(resp, 'Escribe tu nombre completo (mínimo 3 caracteres).', false);
     return;
   }
 
-  const resultado = DB.registrar(nombre.value, telefono.value, regCorreo.value, pass.value);
+  if (!telOk) {
+    mostrarRespuesta(resp, 'El teléfono debe tener exactamente 10 dígitos.', false);
+    return;
+  }
+
+  if (!correoOk) {
+    mostrarRespuesta(resp, 'Escribe un correo electrónico válido (ejemplo@dominio.com).', false);
+    return;
+  }
+
+  if (!passOk) {
+    mostrarRespuesta(resp, 'La contraseña debe tener al menos 6 caracteres.', false);
+    return;
+  }
+
+  const correoIngresado = regCorreo.value.trim();
+  const resultado = DB.registrar(nombre.value, digitosTel, correoIngresado, pass.value);
   mostrarRespuesta(resp, resultado.mensaje, resultado.exito);
 
   if (resultado.exito) {
+    procesandoAuth = true;
+    document.getElementById('btnRegistro').disabled = true;
     formRegistro.reset();
     setTimeout(() => {
       window.location.href = 'mis_reservas.html';
     }, 650);
+  } else if (resultado.yaExiste) {
+    setTimeout(() => {
+      cambiarTab(false);
+      loginCorreo.value = correoIngresado;
+      document.getElementById('loginPass').focus();
+    }, 1300);
   }
 });
