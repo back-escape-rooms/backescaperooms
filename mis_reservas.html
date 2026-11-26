@@ -6,7 +6,6 @@
   <title>Mis Reservaciones y Pase QR | Back Escape Rooms</title>
   <link rel="stylesheet" href="auth_admin.css">
   <script src="db_local.js"></script>
-  <script src="main.js"></script>
 </head>
 <body>
   <header class="barra-superior">
@@ -61,6 +60,15 @@
             <label for="notas">Comentarios adicionales</label>
             <input type="text" id="notas" placeholder="Ej. Nivel de susto moderado">
           </div>
+        </div>
+
+        <div class="campo" style="margin-bottom:14px;">
+          <label for="codigo_descuento">Código de descuento / promoción (opcional)</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="codigo_descuento" placeholder="Ej. NOCLIP20 o ESCUADRON15" style="flex:1; min-width:190px; text-transform:uppercase;">
+            <button type="button" id="btnAplicarCupon" class="btn-mini" style="border-color:var(--amarillo); color:var(--amarillo); padding:10px 16px;">Aplicar Código</button>
+          </div>
+          <small id="msgCupon" style="display:block; margin-top:6px; color:var(--gris);"></small>
         </div>
 
         <!-- RESUMEN AUTOMÁTICO DEL TOTAL -->
@@ -197,14 +205,66 @@
       selectSala.add(opt);
     });
 
+    const inputCupon = document.getElementById('codigo_descuento');
+    const btnAplicarCupon = document.getElementById('btnAplicarCupon');
+    const msgCupon = document.getElementById('msgCupon');
+    let cuponActivo = null;
+
+    function evaluarCupon(silencioso = false) {
+      const raw = inputCupon.value.trim();
+      if (!raw) {
+        cuponActivo = null;
+        if (!silencioso) msgCupon.textContent = '';
+        return;
+      }
+      const res = DB.validarCupon(raw, {
+        sala_id: selectSala.value,
+        personas: Math.max(2, Number(inputPersonas.value) || 2),
+        cliente_correo: sesion.correo
+      });
+      if (res.valida) {
+        cuponActivo = res;
+        msgCupon.textContent = `✓ ${res.mensaje}`;
+        msgCupon.style.color = '#4ade80';
+      } else {
+        cuponActivo = null;
+        msgCupon.textContent = `✕ ${res.mensaje}`;
+        msgCupon.style.color = '#f87171';
+      }
+    }
+
     function actualizarTotal() {
+      if (inputCupon.value.trim()) {
+        evaluarCupon(true);
+      }
       const opt = selectSala.selectedOptions[0];
       const precio = opt ? Number(opt.dataset.precio) : 450;
       const cant = Math.max(1, Number(inputPersonas.value) || 2);
-      const total = precio * cant;
-      document.getElementById('desglosePrecio').textContent = `$${precio} MXN × ${cant} jugadores`;
+      const subtotal = precio * cant;
+      const descuento = cuponActivo ? Math.round(subtotal * (cuponActivo.porcentaje / 100)) : 0;
+      const total = Math.max(0, subtotal - descuento);
+
+      if (cuponActivo) {
+        document.getElementById('desglosePrecio').textContent =
+          `$${precio} MXN × ${cant} jug. ($${subtotal.toLocaleString('es-MX')}) − ${cuponActivo.porcentaje}% (${cuponActivo.codigo})`;
+      } else {
+        document.getElementById('desglosePrecio').textContent = `$${precio} MXN × ${cant} jugadores`;
+      }
       document.getElementById('totalPagar').textContent = `$${total.toLocaleString('es-MX')} MXN`;
     }
+
+    btnAplicarCupon.addEventListener('click', () => {
+      evaluarCupon(false);
+      actualizarTotal();
+    });
+
+    inputCupon.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        evaluarCupon(false);
+        actualizarTotal();
+      }
+    });
 
     selectSala.addEventListener('change', actualizarTotal);
     inputPersonas.addEventListener('input', actualizarTotal);
@@ -261,6 +321,7 @@
 
       modalQR.showModal();
     }
+
     function cargarMisCitas() {
       const salasMap = Object.fromEntries(DB.getSalas().map((s) => [s.id, s.nombre]));
       const citas = DB.getCitas().filter(
@@ -314,6 +375,16 @@
         }
       }
 
+      if (inputCupon.value.trim()) {
+        evaluarCupon(false);
+        if (!cuponActivo) {
+          alerta.textContent = msgCupon.textContent.replace(/^✕\s*/, '') || 'El código de descuento no es válido.';
+          alerta.className = 'respuesta fallo';
+          alerta.hidden = false;
+          return;
+        }
+      }
+
       const res = DB.crearCita({
         usuario_id: sesion.id,
         cliente_nombre: sesion.nombre,
@@ -322,16 +393,26 @@
         fecha_cita: inputFecha.value,
         hora_cita: document.getElementById('hora_cita').value,
         personas: inputPersonas.value,
+        codigo_descuento: cuponActivo ? cuponActivo.codigo : '',
         metodo_pago: metodoPago,
         referencia_pago: document.getElementById('speiRef').value.trim(),
         notas: document.getElementById('notas').value
       });
+
+      if (!res.exito) {
+        alerta.textContent = res.mensaje;
+        alerta.className = 'respuesta fallo';
+        alerta.hidden = false;
+        return;
+      }
 
       alerta.textContent = res.mensaje;
       alerta.className = 'respuesta ok';
       alerta.hidden = false;
 
       e.target.reset();
+      cuponActivo = null;
+      msgCupon.textContent = '';
       actualizarTotal();
       cargarMisCitas();
       if (res.cita) mostrarPaseQR(res.cita);
