@@ -26,15 +26,18 @@ function mostrarMensajeVisual(elementoAlerta, texto, esValido) {
 }
 
 function iniciarValidacionesFormularios() {
-  // Permite solo hasta 10 dígitos en campos de teléfono
+  // Permite solo hasta 10 dígitos numéricos en campos de teléfono
   const inputsTelefono = document.querySelectorAll('input[type="tel"]');
   inputsTelefono.forEach((input) => {
     input.addEventListener('input', () => {
-      input.value = input.value.replace(/\D/g, '').slice(0, 10);
+      const limpio = input.value.replace(/\D/g, '').slice(0, 10);
+      if (input.value !== limpio) {
+        input.value = limpio;
+      }
     });
   });
 
-  // Validación del formulario de reservación
+  // Validación del formulario de reservación en contacto.html
   const formReserva = document.getElementById('formReservaContacto');
   const alertaReserva = document.getElementById('alertaContacto');
 
@@ -75,7 +78,7 @@ function iniciarValidacionesFormularios() {
     );
   }
 
-  // Validación del formulario de mensaje directo
+  // Validación del formulario de mensaje directo en contacto.html
   const formMensaje = document.getElementById('formMensajeContacto');
   const alertaMensaje = document.getElementById('alertaMensaje');
 
