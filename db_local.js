@@ -1,4 +1,4 @@
-  'use strict';
+'use strict';
 
 /* db_local.js — Base de datos local, generador QR nativo, pagos y sincronización */
 const DB = (() => {
@@ -13,7 +13,7 @@ const DB = (() => {
     { id: 'nivel-0',   codigo: 'ARCHIVO #LVL-000', nombre: 'Nivel 0: El Vestíbulo Amarillo',   estado: 'disponible',    precio: 450 },
     { id: 'nivel-1',   codigo: 'ARCHIVO #LVL-001', nombre: 'Nivel 1: Zona Habitable',          estado: 'disponible',    precio: 550 },
     { id: 'nivel-2',   codigo: 'ARCHIVO #LVL-002', nombre: 'Nivel 2: Sueños de Tuberías',      estado: 'disponible',    precio: 580 },
-    { id: 'nivel-3',   codigo: 'ARCHIVO #LVL-FUN', nombre: 'Nivel =): Level Fun',              estado: 'disponible',    precio: 680 },
+    { id: 'nivel-3',   codigo: 'ARCHIVO #LVL-003', nombre: 'Nivel 3: Estación Eléctrica',      estado: 'disponible',    precio: 680 },
     { id: 'nivel-4',   codigo: 'ARCHIVO #LVL-004', nombre: 'Nivel 4: Oficina Abandonada',      estado: 'disponible',    precio: 480 },
     { id: 'nivel-5',   codigo: 'ARCHIVO #LVL-005', nombre: 'Nivel 5: Hotel del Terror',        estado: 'disponible',    precio: 650 },
     { id: 'nivel-37',  codigo: 'ARCHIVO #LVL-037', nombre: 'Nivel 37: Subliminal (Poolrooms)', estado: 'disponible',    precio: 620 },
@@ -30,11 +30,6 @@ const DB = (() => {
       rol: 'admin'
     }
   ];
-
-  function normalizarTelefono10(tel) {
-    const digitos = String(tel || '').replace(/\D/g, '');
-    return digitos.length > 10 ? digitos.slice(-10) : digitos;
-  }
 
   function init() {
     if (!localStorage.getItem(KEYS.USUARIOS)) {
@@ -159,6 +154,7 @@ const DB = (() => {
       for (let dr = -1; dr <= 7; dr++) {
         for (let dc = -1; dc <= 7; dc++) {
           const inOuter = (dr >= 0 && dr <= 6 && (dc === 0 || dc === 6)) || (dc >= 0 && dc <= 6 && (dr === 0 || dr === 6));
+          const inInner = dr >= 2 && dr <= 4 && dc >= 2 && dc === 4;
           setFunc(fr + dr, fc + dc, inOuter || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4));
         }
       }
@@ -251,33 +247,94 @@ const DB = (() => {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
 
+  const PROMOCIONES = {
+    NOCLIP20: {
+      codigo: 'NOCLIP20',
+      nombre: 'Explorador Primerizo (20% OFF)',
+      porcentaje: 20,
+      activa: true,
+      validar(datos) {
+        const citas = JSON.parse(localStorage.getItem(KEYS.CITAS)) || [];
+        const correo = String(datos.cliente_correo || '').trim().toLowerCase();
+        if (correo && citas.some((c) => c.cliente_correo === correo && c.estado_cita !== 'cancelada')) {
+          return { valida: false, mensaje: 'El código NOCLIP20 solo aplica en tu primera reservación.' };
+        }
+        return { valida: true };
+      }
+    },
+    ESCUADRON15: {
+      codigo: 'ESCUADRON15',
+      nombre: 'Escuadrón Completo (15% OFF)',
+      porcentaje: 15,
+      activa: true,
+      validar(datos) {
+        const personas = Number(datos.personas) || 0;
+        const dificiles = ['nivel-1', 'nivel-2', 'nivel-3', 'nivel-5', 'nivel-37', 'nivel-run'];
+        if (personas < 5 || personas > 8) {
+          return { valida: false, mensaje: 'El código ESCUADRON15 requiere de 5 a 8 jugadores.' };
+        }
+        if (datos.sala_id && !dificiles.includes(datos.sala_id)) {
+          return { valida: false, mensaje: 'ESCUADRON15 solo aplica en salas de dificultad Intermedio o Difícil.' };
+        }
+        return { valida: true };
+      }
+    },
+    NOCTURNO25: {
+      codigo: 'NOCTURNO25',
+      nombre: 'Pase Nocturno (25% OFF)',
+      porcentaje: 25,
+      activa: false,
+      validar() {
+        return { valida: false, mensaje: 'La promoción NOCTURNO25 se encuentra inactiva actualmente.' };
+      }
+    }
+  };
+
+  function validarCupon(codigoRaw, datos = {}) {
+    const code = String(codigoRaw || '').trim().toUpperCase();
+    if (!code) {
+      return { valida: false, mensaje: 'Ingresa un código promocional.' };
+    }
+    const promo = PROMOCIONES[code];
+    if (!promo) {
+      return { valida: false, mensaje: `El código "${code}" no es válido.` };
+    }
+    if (!promo.activa) {
+      return { valida: false, mensaje: `El código "${code}" ha expirado o está inactivo.` };
+    }
+    if (typeof promo.validar === 'function') {
+      const check = promo.validar(datos);
+      if (!check.valida) return check;
+    }
+    return {
+      valida: true,
+      codigo: promo.codigo,
+      nombre: promo.nombre,
+      porcentaje: promo.porcentaje,
+      mensaje: `Cupón ${promo.codigo} aplicado: ${promo.porcentaje}% de descuento.`
+    };
+  }
+
   return {
     generarQRDataURL,
+    validarCupon,
     getUsuarios() {
       return JSON.parse(localStorage.getItem(KEYS.USUARIOS)) || [];
     },
     registrar(nombre, telefono, correo, password) {
       const usuarios = this.getUsuarios();
-      const correoNorm = String(correo || '').trim().toLowerCase();
-      const telNorm = normalizarTelefono10(telefono);
-
-      if (usuarios.some((u) => String(u.correo || '').trim().toLowerCase() === correoNorm)) {
-        return {
-          exito: false,
-          yaExiste: true,
-          mensaje: 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.'
-        };
+      const correoNorm = correo.trim().toLowerCase();
+      if (usuarios.some((u) => u.correo.toLowerCase() === correoNorm)) {
+        return { exito: false, mensaje: 'Este correo ya está registrado. Inicia sesión.' };
       }
-
       const nuevo = {
         id: Date.now(),
-        nombre: String(nombre || '').trim(),
-        telefono: telNorm,
+        nombre: nombre.trim(),
+        telefono: telefono.trim(),
         correo: correoNorm,
-        password: String(password || ''),
+        password,
         rol: 'cliente'
       };
-
       usuarios.push(nuevo);
       localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
       localStorage.setItem(KEYS.SESION, JSON.stringify({
@@ -289,10 +346,9 @@ const DB = (() => {
       return { exito: true, mensaje: 'Registro previo completado. Redirigiendo...', rol: 'cliente' };
     },
     login(correo, password) {
-      const correoNorm = String(correo || '').trim().toLowerCase();
-      const passStr = String(password || '');
+      const correoNorm = correo.trim().toLowerCase();
       const usuario = this.getUsuarios().find(
-        (u) => String(u.correo || '').trim().toLowerCase() === correoNorm && u.password === passStr
+        (u) => u.correo.toLowerCase() === correoNorm && u.password === password
       );
       if (!usuario) {
         return { exito: false, mensaje: 'Correo o contraseña incorrectos.' };
@@ -305,28 +361,6 @@ const DB = (() => {
       }));
       const destino = usuario.rol === 'admin' ? 'Panel de Administración' : 'Portal de Cliente';
       return { exito: true, mensaje: `Bienvenido, ${usuario.nombre}. Abriendo ${destino}...`, rol: usuario.rol };
-    },
-    recuperarPassword(correo, telefono, nuevaPassword) {
-      const usuarios = this.getUsuarios();
-      const correoNorm = String(correo || '').trim().toLowerCase();
-      const telLimpio = normalizarTelefono10(telefono);
-
-      const usuario = usuarios.find(
-        (u) => String(u.correo || '').trim().toLowerCase() === correoNorm
-      );
-
-      if (!usuario) {
-        return { exito: false, mensaje: 'No existe ninguna cuenta registrada con ese correo.' };
-      }
-
-      const telGuardado = normalizarTelefono10(usuario.telefono);
-      if (telGuardado !== telLimpio) {
-        return { exito: false, mensaje: 'El teléfono ingresado no coincide con el registrado en esta cuenta.' };
-      }
-
-      usuario.password = String(nuevaPassword || '');
-      localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
-      return { exito: true, mensaje: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
     },
     getSesion() {
       return JSON.parse(localStorage.getItem(KEYS.SESION));
@@ -365,7 +399,22 @@ const DB = (() => {
 
       const precioUnitario = Number(salaObj.precio) || 450;
       const personas = Number(datos.personas) || 2;
-      const total = precioUnitario * personas;
+      const subtotal = precioUnitario * personas;
+      let descuentoMonto = 0;
+      let codigoAplicado = '';
+      if (datos.codigo_descuento) {
+        const resCupon = validarCupon(datos.codigo_descuento, {
+          sala_id: datos.sala_id,
+          personas,
+          cliente_correo: datos.cliente_correo
+        });
+        if (!resCupon.valida) {
+          return { exito: false, mensaje: resCupon.mensaje };
+        }
+        codigoAplicado = resCupon.codigo;
+        descuentoMonto = Math.round(subtotal * (resCupon.porcentaje / 100));
+      }
+      const total = Math.max(0, subtotal - descuentoMonto);
       const nuevoId = citas.length > 0 ? Math.max(...citas.map((c) => c.id)) + 1 : 101;
       const metodoPago = datos.metodo_pago || 'sucursal';
 
@@ -383,6 +432,9 @@ const DB = (() => {
         fecha_cita: datos.fecha_cita,
         hora_cita: datos.hora_cita,
         personas,
+        subtotal,
+        descuento: descuentoMonto,
+        codigo_descuento: codigoAplicado,
         total,
         metodo_pago: metodoPago,
         estado_pago: datos.estado_pago || estadoPago,
@@ -437,7 +489,7 @@ function sincronizarSitioPublico() {
     'nivel-0': ['nivel 0', 'vestíbulo', 'vestibulo'],
     'nivel-1': ['nivel 1', 'zona habitable'],
     'nivel-2': ['nivel 2', 'tuberías', 'tuberias'],
-    'nivel-3': ['nivel =)', 'level fun', 'lvl-fun', 'fiesta'],
+    'nivel-3': ['nivel 3', 'estación eléctrica', 'estacion electrica'],
     'nivel-4': ['nivel 4', 'oficina'],
     'nivel-5': ['nivel 5', 'hotel'],
     'nivel-37': ['nivel 37', 'subliminal', 'poolrooms'],
