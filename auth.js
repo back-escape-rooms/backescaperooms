@@ -6,6 +6,7 @@ const tabLogin = document.getElementById('tabLogin');
 const tabRegistro = document.getElementById('tabRegistro');
 const formLogin = document.getElementById('formLogin');
 const formRegistro = document.getElementById('formRegistro');
+const formRecuperar = document.getElementById('formRecuperar');
 
 function cambiarTab(mostrarRegistro) {
   tabLogin.classList.toggle('activo', !mostrarRegistro);
@@ -14,10 +15,31 @@ function cambiarTab(mostrarRegistro) {
   tabRegistro.setAttribute('aria-selected', String(mostrarRegistro));
   formLogin.hidden = mostrarRegistro;
   formRegistro.hidden = !mostrarRegistro;
+  if (formRecuperar) formRecuperar.hidden = true;
 }
 
 tabLogin.addEventListener('click', () => cambiarTab(false));
 tabRegistro.addEventListener('click', () => cambiarTab(true));
+
+const linkOlvidePass = document.getElementById('linkOlvidePass');
+const linkVolverLogin = document.getElementById('linkVolverLogin');
+
+if (linkOlvidePass && formRecuperar) {
+  linkOlvidePass.addEventListener('click', (e) => {
+    e.preventDefault();
+    formLogin.hidden = true;
+    formRegistro.hidden = true;
+    formRecuperar.hidden = false;
+    document.getElementById('respRecuperar').hidden = true;
+  });
+}
+
+if (linkVolverLogin && formRecuperar) {
+  linkVolverLogin.addEventListener('click', (e) => {
+    e.preventDefault();
+    cambiarTab(false);
+  });
+}
 
 function validarCampoCorreo(input, cajaError) {
   const valor = input.value.trim();
@@ -43,6 +65,12 @@ loginCorreo.addEventListener('input', () => validarCampoCorreo(loginCorreo, erro
 const regCorreo = document.getElementById('regCorreo');
 const errorRegCorreo = document.getElementById('errorRegCorreo');
 regCorreo.addEventListener('input', () => validarCampoCorreo(regCorreo, errorRegCorreo));
+
+const recCorreo = document.getElementById('recCorreo');
+const errorRecCorreo = document.getElementById('errorRecCorreo');
+if (recCorreo && errorRecCorreo) {
+  recCorreo.addEventListener('input', () => validarCampoCorreo(recCorreo, errorRecCorreo));
+}
 
 function mostrarRespuesta(caja, texto, exito) {
   caja.textContent = texto;
@@ -74,6 +102,41 @@ formLogin.addEventListener('submit', (e) => {
     }, 550);
   }
 });
+
+if (formRecuperar) {
+  formRecuperar.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const resp = document.getElementById('respRecuperar');
+    const telInput = document.getElementById('recTelefono');
+    const passInput = document.getElementById('recNuevaPass');
+    resp.hidden = true;
+
+    const correoOk = validarCampoCorreo(recCorreo, errorRecCorreo);
+    const telOk = telInput.value.replace(/\D/g, '').length >= 7;
+    const passOk = passInput.value.length >= 6;
+
+    telInput.classList.toggle('invalido', !telOk);
+    passInput.classList.toggle('invalido', !passOk);
+
+    if (!correoOk || !telOk || !passOk) {
+      mostrarRespuesta(resp, 'Completa los datos correctamente (nueva contraseña mínimo 6 caracteres).', false);
+      return;
+    }
+
+    const resultado = DB.recuperarPassword(recCorreo.value, telInput.value, passInput.value);
+    mostrarRespuesta(resp, resultado.mensaje, resultado.exito);
+
+    if (resultado.exito) {
+      const correoGuardado = recCorreo.value.trim();
+      formRecuperar.reset();
+      setTimeout(() => {
+        cambiarTab(false);
+        loginCorreo.value = correoGuardado;
+        document.getElementById('loginPass').focus();
+      }, 1100);
+    }
+  });
+}
 
 formRegistro.addEventListener('submit', (e) => {
   e.preventDefault();
