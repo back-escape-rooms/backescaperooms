@@ -54,8 +54,8 @@
 
         <div class="grid-dos">
           <div class="campo">
-            <label for="personas" id="labelPersonas">Número de jugadores (2 a 6)</label>
-            <input type="number" id="personas" min="2" max="6" value="3" required>
+            <label for="personas" id="labelPersonas">Número de jugadores (2 a 8)</label>
+            <input type="number" id="personas" min="2" max="8" value="3" required>
           </div>
           <div class="campo">
             <label for="notas">Comentarios adicionales</label>
@@ -207,19 +207,30 @@
 
     function cargarSalasSelect() {
       const valorAnterior = selectSala.value;
-      const salasDisponibles = DB.getSalas().filter((s) => s.estado === 'disponible');
+      const todasLasSalas = DB.getSalas();
       selectSala.innerHTML = '';
 
-      salasDisponibles.forEach((s) => {
-        const min = s.min || 2;
-        const max = s.max || 6;
-        const opt = new Option(`${s.nombre} — $${s.precio} MXN / pers. (${min}-${max} jug.)`, s.id);
+      todasLasSalas.forEach((s) => {
+        const min = Number(s.min) || 2;
+        const max = Number(s.max) || 8;
+        const disponible = String(s.estado).toLowerCase() === 'disponible';
+        const etiquetaEstado = disponible
+          ? `$${s.precio} MXN / pers.`
+          : (s.estado === 'mantenimiento' ? 'NO DISPONIBLE (Mantenimiento)' : 'CERRADA');
+
+        const opt = new Option(`${s.nombre} — ${etiquetaEstado}`, s.id);
         opt.dataset.precio = s.precio;
         opt.dataset.min = min;
         opt.dataset.max = max;
-        if (s.id === valorAnterior) opt.selected = true;
+        opt.disabled = !disponible;
+        if (s.id === valorAnterior && disponible) opt.selected = true;
         selectSala.add(opt);
       });
+
+      if (!selectSala.value) {
+        const primeraDisponible = Array.from(selectSala.options).find((o) => !o.disabled);
+        if (primeraDisponible) primeraDisponible.selected = true;
+      }
 
       actualizarTotal(true);
     }
@@ -227,7 +238,7 @@
     function sincronizarLimitesPersonas(ajustarValor = true) {
       const opt = selectSala.selectedOptions[0];
       const min = opt && opt.dataset.min ? Number(opt.dataset.min) : 2;
-      const max = opt && opt.dataset.max ? Number(opt.dataset.max) : 6;
+      const max = opt && opt.dataset.max ? Number(opt.dataset.max) : 8;
 
       inputPersonas.min = min;
       inputPersonas.max = max;
@@ -273,7 +284,7 @@
       const opt = selectSala.selectedOptions[0];
       const precio = opt ? Number(opt.dataset.precio) : 450;
       const minJug = Number(inputPersonas.min) || 2;
-      const cant = Number(inputPersonas.value) || minJug;
+      const cant = Math.max(1, Number(inputPersonas.value) || minJug);
       const subtotal = precio * cant;
       const descuento = cuponActivo ? Math.round(subtotal * (cuponActivo.porcentaje / 100)) : 0;
       const total = Math.max(0, subtotal - descuento);
@@ -395,7 +406,7 @@
 
       const metodoPago = document.querySelector('input[name="metodo_pago"]:checked').value;
       const minJug = Number(inputPersonas.min) || 2;
-      const maxJug = Number(inputPersonas.max) || 6;
+      const maxJug = Number(inputPersonas.max) || 8;
       const cantJug = Number(inputPersonas.value);
 
       if (!Number.isInteger(cantJug) || cantJug < minJug || cantJug > maxJug) {
