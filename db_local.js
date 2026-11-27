@@ -500,28 +500,41 @@ const DB = (() => {
       if (metodoPago === 'transferencia') estadoPago = 'en_validacion';
 
       const nueva = {
-        id: nuevoId,
-        codigo_qr: `BER-${nuevoId}-${datos.sala_id.toUpperCase()}`,
-        usuario_id: datos.usuario_id || null,
-        cliente_nombre: datos.cliente_nombre,
-        cliente_correo: datos.cliente_correo.toLowerCase(),
-        sala_id: datos.sala_id,
-        fecha_cita: datos.fecha_cita,
-        hora_cita: datos.hora_cita,
-        personas,
-        subtotal,
-        descuento: descuentoMonto,
-        codigo_descuento: codigoAplicado,
-        total,
-        metodo_pago: metodoPago,
-        estado_pago: datos.estado_pago || estadoPago,
-        referencia_pago: datos.referencia_pago || `REF-${nuevoId}`,
-        estado_cita: datos.estado_cita || (metodoPago === 'tarjeta' ? 'confirmada' : 'pendiente'),
-        notas: datos.notas || ''
-      };
+     id: String(nuevoId),
+     codigo_qr: `BER-${nuevoId}-${datos.sala_id.toUpperCase()}`,
+     usuario_id: datos.usuario_id || null,
+     cliente_nombre: datos.cliente_nombre,
+     cliente_correo: datos.cliente_correo.toLowerCase(),
+     sala_id: datos.sala_id,
+     fecha_cita: datos.fecha_cita,
+     hora_cita: datos.hora_cita,
+     personas,
+     subtotal,
+     descuento: descuentoMonto,
+     codigo_descuento: codigoAplicado || null,
+     total,
+     metodo_pago: metodoPago,
+     estado_pago: datos.estado_pago || estadoPago,
+     referencia_pago: datos.referencia_pago || `REF-${nuevoId}`,
+     estado_cita: datos.estado_cita || (metodoPago === 'tarjeta' ? 'confirmada' : 'pendiente'),
+     notas: datos.notas || ''
+   };
 
-      citas.push(nueva);
-      localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
+   citas.push(nueva);
+   localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
+
+   if (supabaseClient) {
+     supabaseClient
+       .from('citas')
+       .insert([nueva])
+       .then(({ error }) => {
+         if (error) {
+           alert('Error Supabase: ' + error.message);
+         } else {
+           sincronizarDesdeNube();
+         }
+       });
+   }
 
       if (supabaseClient) {
      const filaSupabase = { ...nueva, id: String(nuevoId) };
