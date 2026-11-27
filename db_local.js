@@ -492,7 +492,7 @@ const DB = (() => {
         descuentoMonto = Math.round(subtotal * (resCupon.porcentaje / 100));
       }
       const total = Math.max(0, subtotal - descuentoMonto);
-      const nuevoId = citas.length > 0 ? Math.max(...citas.map((c) => Number(c.id) || 0)) + 1 : 101;
+      const nuevoId = Number(String(Date.now()).slice(-6));
       const metodoPago = datos.metodo_pago || 'sucursal';
 
       let estadoPago = 'pendiente_sucursal';
@@ -529,14 +529,8 @@ const DB = (() => {
        .from('citas')
        .insert([filaSupabase])
        .then(({ error }) => {
-         if (error) {
-           alert('Error Supabase: ' + error.message);
-         } else {
-           sincronizarDesdeNube();
-         }
+         if (!error) sincronizarDesdeNube();
        });
-   } else {
-     alert('Falta el script de Supabase en este archivo HTML');
    }
 
       if (supabaseClient) {
