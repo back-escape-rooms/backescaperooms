@@ -1,7 +1,8 @@
 'use strict';
 
-/* CONFIGURACIÓN DE SUPABASE 
-   
+/* ==========================================================================
+   CONFIGURACIÓN DE SUPABASE (PEGA AQUÍ TUS DOS LLAVES DEL PASO 2)
+   ========================================================================== */
 const SUPABASE_URL = 'https://oigmgbwsilpbxuveckie.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pZ21nYndzaWxwYnh1dmVja2llIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU3MjI4OTMsImV4cCI6MjExMTI5ODg5M30.xC4E1PzWG-BK9-Fx_Mf5sOCk0itPhlDFBotxsgDVFes';
 
@@ -20,14 +21,14 @@ const DB = (() => {
   };
 
   const SALAS_INICIALES = [
-    { id: 'nivel-0',   codigo: 'ARCHIVO #LVL-000', nombre: 'Nivel 0: El Vestíbulo Amarillo',   estado: 'disponible',    precio: 450, min: 2, max: 6 },
-    { id: 'nivel-1',   codigo: 'ARCHIVO #LVL-001', nombre: 'Nivel 1: Zona Habitable',          estado: 'disponible',    precio: 550, min: 3, max: 6 },
-    { id: 'nivel-2',   codigo: 'ARCHIVO #LVL-002', nombre: 'Nivel 2: Sueños de Tuberías',      estado: 'disponible',    precio: 580, min: 3, max: 6 },
-    { id: 'nivel-3',   codigo: 'ARCHIVO #LVL-003', nombre: 'Nivel 3: Estación Eléctrica',      estado: 'disponible',    precio: 680, min: 4, max: 8 },
-    { id: 'nivel-4',   codigo: 'ARCHIVO #LVL-004', nombre: 'Nivel 4: Oficina Abandonada',      estado: 'disponible',    precio: 480, min: 2, max: 6 },
-    { id: 'nivel-5',   codigo: 'ARCHIVO #LVL-005', nombre: 'Nivel 5: Hotel del Terror',        estado: 'disponible',    precio: 650, min: 3, max: 7 },
-    { id: 'nivel-37',  codigo: 'ARCHIVO #LVL-037', nombre: 'Nivel 37: Subliminal (Poolrooms)', estado: 'disponible',    precio: 620, min: 2, max: 6 },
-    { id: 'nivel-run', codigo: 'ARCHIVO #LVL-RUN', nombre: 'Nivel !: ¡Corre por tu Vida!',     estado: 'mantenimiento', precio: 720, min: 3, max: 6 }
+    { id: 'nivel-0',   codigo: 'ARCHIVO #LVL-000', nombre: 'Nivel 0: El Vestíbulo Amarillo',   estado: 'disponible',    precio: 450, min: 2, max: 8 },
+    { id: 'nivel-1',   codigo: 'ARCHIVO #LVL-001', nombre: 'Nivel 1: Zona Habitable',          estado: 'disponible',    precio: 550, min: 2, max: 8 },
+    { id: 'nivel-2',   codigo: 'ARCHIVO #LVL-002', nombre: 'Nivel 2: Sueños de Tuberías',      estado: 'disponible',    precio: 580, min: 2, max: 8 },
+    { id: 'nivel-3',   codigo: 'ARCHIVO #LVL-003', nombre: 'Nivel 3: Estación Eléctrica',      estado: 'disponible',    precio: 680, min: 2, max: 8 },
+    { id: 'nivel-4',   codigo: 'ARCHIVO #LVL-004', nombre: 'Nivel 4: Oficina Abandonada',      estado: 'disponible',    precio: 480, min: 2, max: 8 },
+    { id: 'nivel-5',   codigo: 'ARCHIVO #LVL-005', nombre: 'Nivel 5: Hotel del Terror',        estado: 'disponible',    precio: 650, min: 2, max: 8 },
+    { id: 'nivel-37',  codigo: 'ARCHIVO #LVL-037', nombre: 'Nivel 37: Subliminal (Poolrooms)', estado: 'disponible',    precio: 620, min: 2, max: 8 },
+    { id: 'nivel-run', codigo: 'ARCHIVO #LVL-RUN', nombre: 'Nivel !: ¡Corre por tu Vida!',     estado: 'mantenimiento', precio: 720, min: 2, max: 8 }
   ];
 
   const LIMITES_POR_ID = Object.fromEntries(
@@ -35,11 +36,12 @@ const DB = (() => {
   );
 
   function normalizarSala(s) {
-    const base = LIMITES_POR_ID[s.id] || { min: 2, max: 6 };
+    const base = LIMITES_POR_ID[s.id] || { min: 2, max: 8 };
     return {
       ...s,
-      min: Number(s.min ?? s.capacidad_min ?? base.min),
-      max: Number(s.max ?? s.capacidad_max ?? base.max)
+      estado: String(s.estado || 'disponible').trim().toLowerCase(),
+      min: 2,
+      max: 8
     };
   }
 
@@ -73,7 +75,7 @@ const DB = (() => {
 
   /* Sincronización automática en segundo plano con Supabase */
   async function sincronizarDesdeNube() {
-    if (!supabaseClient) return false;
+    if (!supabaseClient) return;
     try {
       const [resSalas, resUsuarios, resCitas, resPromos] = await Promise.all([
         supabaseClient.from('salas').select('*'),
@@ -81,10 +83,6 @@ const DB = (() => {
         supabaseClient.from('citas').select('*').order('id', { ascending: true }),
         supabaseClient.from('promociones').select('*')
       ]);
-
-      if (resSalas.error) console.error('Error leyendo salas:', resSalas.error.message);
-      if (resUsuarios.error) console.error('Error leyendo usuarios:', resUsuarios.error.message);
-      if (resCitas.error) console.error('Error leyendo citas:', resCitas.error.message);
 
       if (resSalas.data && resSalas.data.length > 0) {
         localStorage.setItem(KEYS.SALAS, JSON.stringify(resSalas.data.map(normalizarSala)));
@@ -103,14 +101,12 @@ const DB = (() => {
         sincronizarSitioPublico();
       }
       window.dispatchEvent(new CustomEvent('ber-db-sincronizada'));
-      return true;
     } catch (err) {
       console.warn('Aviso de sincronización Supabase:', err.message);
-      return false;
     }
   }
 
-  const promesaSyncInicial = sincronizarDesdeNube();
+  sincronizarDesdeNube();
 
   /* Generador nativo de Código QR escaneable (Versiones 1–6, ECC L, Byte Mode) */
   function generarQRDataURL(texto) {
@@ -382,7 +378,6 @@ const DB = (() => {
 
   return {
     supabase: supabaseClient,
-    promesaSyncInicial,
     sincronizarDesdeNube,
     generarQRDataURL,
     validarCupon,
@@ -506,7 +501,7 @@ const DB = (() => {
       }
 
       const minJug = Number(salaObj.min) || 2;
-      const maxJug = Number(salaObj.max) || 6;
+      const maxJug = Number(salaObj.max) || 8;
       const personas = Number(datos.personas);
 
       if (!Number.isInteger(personas) || personas < minJug || personas > maxJug) {
