@@ -54,8 +54,8 @@
 
         <div class="grid-dos">
           <div class="campo">
-            <label for="personas">Número de jugadores</label>
-            <input type="number" id="personas" min="2" max="8" value="3" required>
+            <label for="personas" id="labelPersonas">Número de jugadores (2 a 6)</label>
+            <input type="number" id="personas" min="2" max="6" value="3" required>
           </div>
           <div class="campo">
             <label for="notas">Comentarios adicionales</label>
@@ -199,18 +199,46 @@
 
     const selectSala = document.getElementById('sala_id');
     const inputPersonas = document.getElementById('personas');
-    const salasDisponibles = DB.getSalas().filter((s) => s.estado === 'disponible');
-
-    salasDisponibles.forEach((s) => {
-      const opt = new Option(`${s.nombre} — $${s.precio} MXN / pers.`, s.id);
-      opt.dataset.precio = s.precio;
-      selectSala.add(opt);
-    });
-
+    const labelPersonas = document.getElementById('labelPersonas');
     const inputCupon = document.getElementById('codigo_descuento');
     const btnAplicarCupon = document.getElementById('btnAplicarCupon');
     const msgCupon = document.getElementById('msgCupon');
     let cuponActivo = null;
+
+    function cargarSalasSelect() {
+      const valorAnterior = selectSala.value;
+      const salasDisponibles = DB.getSalas().filter((s) => s.estado === 'disponible');
+      selectSala.innerHTML = '';
+
+      salasDisponibles.forEach((s) => {
+        const min = s.min || 2;
+        const max = s.max || 6;
+        const opt = new Option(`${s.nombre} — $${s.precio} MXN / pers. (${min}-${max} jug.)`, s.id);
+        opt.dataset.precio = s.precio;
+        opt.dataset.min = min;
+        opt.dataset.max = max;
+        if (s.id === valorAnterior) opt.selected = true;
+        selectSala.add(opt);
+      });
+
+      actualizarTotal(true);
+    }
+
+    function sincronizarLimitesPersonas(ajustarValor = true) {
+      const opt = selectSala.selectedOptions[0];
+      const min = opt && opt.dataset.min ? Number(opt.dataset.min) : 2;
+      const max = opt && opt.dataset.max ? Number(opt.dataset.max) : 6;
+
+      inputPersonas.min = min;
+      inputPersonas.max = max;
+      labelPersonas.textContent = `Número de jugadores (${min} a ${max})`;
+
+      if (ajustarValor) {
+        const actual = Number(inputPersonas.value);
+        if (!actual || actual < min) inputPersonas.value = min;
+        if (actual > max) inputPersonas.value = max;
+      }
+    }
 
     function evaluarCupon(silencioso = false) {
       const raw = inputCupon.value.trim();
@@ -219,9 +247,10 @@
         if (!silencioso) msgCupon.textContent = '';
         return;
       }
+      const minJug = Number(inputPersonas.min) || 2;
       const res = DB.validarCupon(raw, {
         sala_id: selectSala.value,
-        personas: Math.max(2, Number(inputPersonas.value) || 2),
+        personas: Math.max(minJug, Number(inputPersonas.value) || minJug),
         cliente_correo: sesion.correo
       });
       if (res.valida) {
@@ -235,13 +264,16 @@
       }
     }
 
-    function actualizarTotal() {
+    function actualizarTotal(ajustarValor = false) {
+      sincronizarLimitesPersonas(ajustarValor);
+
       if (inputCupon.value.trim()) {
         evaluarCupon(true);
       }
       const opt = selectSala.selectedOptions[0];
       const precio = opt ? Number(opt.dataset.precio) : 450;
-      const cant = Math.max(1, Number(inputPersonas.value) || 2);
+      const minJug = Number(inputPersonas.min) || 2;
+      const cant = Number(inputPersonas.value) || minJug;
       const subtotal = precio * cant;
       const descuento = cuponActivo ? Math.round(subtotal * (cuponActivo.porcentaje / 100)) : 0;
       const total = Math.max(0, subtotal - descuento);
@@ -257,20 +289,21 @@
 
     btnAplicarCupon.addEventListener('click', () => {
       evaluarCupon(false);
-      actualizarTotal();
+      actualizarTotal(false);
     });
 
     inputCupon.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         evaluarCupon(false);
-        actualizarTotal();
+        actualizarTotal(false);
       }
     });
 
-    selectSala.addEventListener('change', actualizarTotal);
-    inputPersonas.addEventListener('input', actualizarTotal);
-    actualizarTotal();
+    selectSala.addEventListener('change', () => actualizarTotal(true));
+    inputPersonas.addEventListener('input', () => actualizarTotal(false));
+    inputPersonas.addEventListener('blur', () => actualizarTotal(true));
+    cargarSalasSelect();
 
     const radiosPago = document.querySelectorAll('input[name="metodo_pago"]');
     radiosPago.forEach((radio) => {
@@ -324,7 +357,7 @@
     function cargarMisCitas() {
       const salasMap = Object.fromEntries(DB.getSalas().map((s) => [s.id, s.nombre]));
       const citas = DB.getCitas().filter(
-        (c) => c.usuario_id === sesion.id || c.cliente_correo === sesion.correo
+        (c) => String(c.usuario_id) === String(sesion.id) || c.cliente_correo === sesion.correo
       );
       const tbody = document.getElementById('tbodyMisCitas');
 
@@ -361,6 +394,17 @@
       alerta.hidden = true;
 
       const metodoPago = document.querySelector('input[name="metodo_pago"]:checked').value;
+      const minJug = Number(inputPersonas.min) || 2;
+      const maxJug = Number(inputPersonas.max) || 6;
+      const cantJug = Number(inputPersonas.value);
+
+      if (!Number.isInteger(cantJug) || cantJug < minJug || cantJug > maxJug) {
+        alerta.textContent = `Esta sala admite entre ${minJug} y ${maxJug} jugadores.`;
+        alerta.className = 'respuesta fallo';
+        alerta.hidden = false;
+        inputPersonas.focus();
+        return;
+      }
 
       if (metodoPago === 'tarjeta') {
         const num = document.getElementById('cardNumero').value.replace(/\s/g, '');
@@ -391,7 +435,7 @@
         sala_id: selectSala.value,
         fecha_cita: inputFecha.value,
         hora_cita: document.getElementById('hora_cita').value,
-        personas: inputPersonas.value,
+        personas: cantJug,
         codigo_descuento: cuponActivo ? cuponActivo.codigo : '',
         metodo_pago: metodoPago,
         referencia_pago: document.getElementById('speiRef').value.trim(),
@@ -412,12 +456,16 @@
       e.target.reset();
       cuponActivo = null;
       msgCupon.textContent = '';
-      actualizarTotal();
+      actualizarTotal(true);
       cargarMisCitas();
       if (res.cita) mostrarPaseQR(res.cita);
     });
 
     cargarMisCitas();
+    window.addEventListener('ber-db-sincronizada', () => {
+      cargarSalasSelect();
+      cargarMisCitas();
+    });
   </script>
 </body>
 </html>
