@@ -21,15 +21,28 @@ const DB = (() => {
   };
 
   const SALAS_INICIALES = [
-    { id: 'nivel-0',   codigo: 'ARCHIVO #LVL-000', nombre: 'Nivel 0: El Vestíbulo Amarillo',   estado: 'disponible',    precio: 450 },
-    { id: 'nivel-1',   codigo: 'ARCHIVO #LVL-001', nombre: 'Nivel 1: Zona Habitable',          estado: 'disponible',    precio: 550 },
-    { id: 'nivel-2',   codigo: 'ARCHIVO #LVL-002', nombre: 'Nivel 2: Sueños de Tuberías',      estado: 'disponible',    precio: 580 },
-    { id: 'nivel-3',   codigo: 'ARCHIVO #LVL-003', nombre: 'Nivel 3: Estación Eléctrica',      estado: 'disponible',    precio: 680 },
-    { id: 'nivel-4',   codigo: 'ARCHIVO #LVL-004', nombre: 'Nivel 4: Oficina Abandonada',      estado: 'disponible',    precio: 480 },
-    { id: 'nivel-5',   codigo: 'ARCHIVO #LVL-005', nombre: 'Nivel 5: Hotel del Terror',        estado: 'disponible',    precio: 650 },
-    { id: 'nivel-37',  codigo: 'ARCHIVO #LVL-037', nombre: 'Nivel 37: Subliminal (Poolrooms)', estado: 'disponible',    precio: 620 },
-    { id: 'nivel-run', codigo: 'ARCHIVO #LVL-RUN', nombre: 'Nivel !: ¡Corre por tu Vida!',     estado: 'mantenimiento', precio: 720 }
+    { id: 'nivel-0',   codigo: 'ARCHIVO #LVL-000', nombre: 'Nivel 0: El Vestíbulo Amarillo',   estado: 'disponible',    precio: 450, min: 2, max: 6 },
+    { id: 'nivel-1',   codigo: 'ARCHIVO #LVL-001', nombre: 'Nivel 1: Zona Habitable',          estado: 'disponible',    precio: 550, min: 3, max: 6 },
+    { id: 'nivel-2',   codigo: 'ARCHIVO #LVL-002', nombre: 'Nivel 2: Sueños de Tuberías',      estado: 'disponible',    precio: 580, min: 3, max: 6 },
+    { id: 'nivel-3',   codigo: 'ARCHIVO #LVL-003', nombre: 'Nivel 3: Estación Eléctrica',      estado: 'disponible',    precio: 680, min: 4, max: 8 },
+    { id: 'nivel-4',   codigo: 'ARCHIVO #LVL-004', nombre: 'Nivel 4: Oficina Abandonada',      estado: 'disponible',    precio: 480, min: 2, max: 6 },
+    { id: 'nivel-5',   codigo: 'ARCHIVO #LVL-005', nombre: 'Nivel 5: Hotel del Terror',        estado: 'disponible',    precio: 650, min: 3, max: 7 },
+    { id: 'nivel-37',  codigo: 'ARCHIVO #LVL-037', nombre: 'Nivel 37: Subliminal (Poolrooms)', estado: 'disponible',    precio: 620, min: 2, max: 6 },
+    { id: 'nivel-run', codigo: 'ARCHIVO #LVL-RUN', nombre: 'Nivel !: ¡Corre por tu Vida!',     estado: 'mantenimiento', precio: 720, min: 3, max: 6 }
   ];
+
+  const LIMITES_POR_ID = Object.fromEntries(
+    SALAS_INICIALES.map((s) => [s.id, { min: s.min, max: s.max }])
+  );
+
+  function normalizarSala(s) {
+    const base = LIMITES_POR_ID[s.id] || { min: 2, max: 6 };
+    return {
+      ...s,
+      min: Number(s.min ?? s.capacidad_min ?? base.min),
+      max: Number(s.max ?? s.capacidad_max ?? base.max)
+    };
+  }
 
   const USUARIOS_INICIALES = [
     {
@@ -46,8 +59,11 @@ const DB = (() => {
     if (!localStorage.getItem(KEYS.USUARIOS)) {
       localStorage.setItem(KEYS.USUARIOS, JSON.stringify(USUARIOS_INICIALES));
     }
-    if (!localStorage.getItem(KEYS.SALAS)) {
+    const guardadas = JSON.parse(localStorage.getItem(KEYS.SALAS) || 'null');
+    if (!guardadas) {
       localStorage.setItem(KEYS.SALAS, JSON.stringify(SALAS_INICIALES));
+    } else {
+      localStorage.setItem(KEYS.SALAS, JSON.stringify(guardadas.map(normalizarSala)));
     }
     if (!localStorage.getItem(KEYS.CITAS)) {
       localStorage.setItem(KEYS.CITAS, JSON.stringify([]));
@@ -68,7 +84,7 @@ const DB = (() => {
       ]);
 
       if (resSalas.data && resSalas.data.length > 0) {
-        localStorage.setItem(KEYS.SALAS, JSON.stringify(resSalas.data));
+        localStorage.setItem(KEYS.SALAS, JSON.stringify(resSalas.data.map(normalizarSala)));
       }
       if (resUsuarios.data && resUsuarios.data.length > 0) {
         localStorage.setItem(KEYS.USUARIOS, JSON.stringify(resUsuarios.data));
@@ -368,49 +384,49 @@ const DB = (() => {
       return JSON.parse(localStorage.getItem(KEYS.USUARIOS)) || [];
     },
 
-     registrar(nombre, telefono, correo, password) {
-   const usuarios = this.getUsuarios();
-   const correoNorm = correo.trim().toLowerCase();
-   if (usuarios.some((u) => u.correo.toLowerCase() === correoNorm)) {
-     return { exito: false, mensaje: 'Este correo ya está registrado. Inicia sesión.' };
-   }
-   const nuevo = {
-     id: String(Date.now()),
-     nombre: nombre.trim(),
-     telefono: telefono.trim(),
-     correo: correoNorm,
-     password,
-     rol: 'cliente'
-   };
-   usuarios.push(nuevo);
-   localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
-   localStorage.setItem(KEYS.SESION, JSON.stringify({
-     id: nuevo.id,
-     nombre: nuevo.nombre,
-     correo: nuevo.correo,
-     rol: nuevo.rol
-   }));
+    registrar(nombre, telefono, correo, password) {
+      const usuarios = this.getUsuarios();
+      const correoNorm = correo.trim().toLowerCase();
+      if (usuarios.some((u) => u.correo.toLowerCase() === correoNorm)) {
+        return { exito: false, mensaje: 'Este correo ya está registrado. Inicia sesión.' };
+      }
+      const nuevo = {
+        id: String(Date.now()),
+        nombre: nombre.trim(),
+        telefono: telefono.trim(),
+        correo: correoNorm,
+        password,
+        rol: 'cliente'
+      };
+      usuarios.push(nuevo);
+      localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
+      localStorage.setItem(KEYS.SESION, JSON.stringify({
+        id: nuevo.id,
+        nombre: nuevo.nombre,
+        correo: nuevo.correo,
+        rol: nuevo.rol
+      }));
 
-   if (supabaseClient) {
-     supabaseClient.from('usuarios').insert([{
-       id: nuevo.id,
-       nombre: nuevo.nombre,
-       telefono: nuevo.telefono,
-       correo: nuevo.correo,
-       password: nuevo.password,
-       rol: 'cliente'
-     }]).then(({ error }) => {
-       if (error) {
-         alert('Error registro Supabase: ' + error.message);
-       } else {
-         sincronizarDesdeNube();
-       }
-     });
-   }
+      if (supabaseClient) {
+        supabaseClient.from('usuarios').insert([{
+          id: nuevo.id,
+          nombre: nuevo.nombre,
+          telefono: nuevo.telefono,
+          correo: nuevo.correo,
+          password: nuevo.password,
+          rol: 'cliente'
+        }]).then(({ error }) => {
+          if (error) {
+            alert('Error registro Supabase: ' + error.message);
+          } else {
+            sincronizarDesdeNube();
+          }
+        });
+      }
 
-   return { exito: true, mensaje: 'Registro completado. Redirigiendo...', rol: 'cliente' };
- },
-     
+      return { exito: true, mensaje: 'Registro completado. Redirigiendo...', rol: 'cliente' };
+    },
+
     login(correo, password) {
       const correoNorm = correo.trim().toLowerCase();
       const usuario = this.getUsuarios().find(
@@ -436,7 +452,8 @@ const DB = (() => {
       window.location.href = 'acceso.html';
     },
     getSalas() {
-      return JSON.parse(localStorage.getItem(KEYS.SALAS)) || SALAS_INICIALES;
+      const lista = JSON.parse(localStorage.getItem(KEYS.SALAS)) || SALAS_INICIALES;
+      return lista.map(normalizarSala);
     },
     actualizarSala(id, estado, precio) {
       const precioNum = Number(precio);
@@ -473,8 +490,18 @@ const DB = (() => {
         };
       }
 
+      const minJug = Number(salaObj.min) || 2;
+      const maxJug = Number(salaObj.max) || 6;
+      const personas = Number(datos.personas);
+
+      if (!Number.isInteger(personas) || personas < minJug || personas > maxJug) {
+        return {
+          exito: false,
+          mensaje: `${salaObj.nombre} requiere mínimo ${minJug} y máximo ${maxJug} jugadores.`
+        };
+      }
+
       const precioUnitario = Number(salaObj.precio) || 450;
-      const personas = Number(datos.personas) || 2;
       const subtotal = precioUnitario * personas;
       let descuentoMonto = 0;
       let codigoAplicado = '';
@@ -499,45 +526,37 @@ const DB = (() => {
       if (metodoPago === 'transferencia') estadoPago = 'en_validacion';
 
       const nueva = {
-     id: String(nuevoId),
-     codigo_qr: `BER-${nuevoId}-${datos.sala_id.toUpperCase()}`,
-     usuario_id: datos.usuario_id || null,
-     cliente_nombre: datos.cliente_nombre,
-     cliente_correo: datos.cliente_correo.toLowerCase(),
-     sala_id: datos.sala_id,
-     fecha_cita: datos.fecha_cita,
-     hora_cita: datos.hora_cita,
-     personas,
-     subtotal,
-     descuento: descuentoMonto,
-     codigo_descuento: codigoAplicado || null,
-     total,
-     metodo_pago: metodoPago,
-     estado_pago: datos.estado_pago || estadoPago,
-     referencia_pago: datos.referencia_pago || `REF-${nuevoId}`,
-     estado_cita: datos.estado_cita || (metodoPago === 'tarjeta' ? 'confirmada' : 'pendiente'),
-     notas: datos.notas || ''
-   };
+        id: String(nuevoId),
+        codigo_qr: `BER-${nuevoId}-${datos.sala_id.toUpperCase()}`,
+        usuario_id: datos.usuario_id || null,
+        cliente_nombre: datos.cliente_nombre,
+        cliente_correo: datos.cliente_correo.toLowerCase(),
+        sala_id: datos.sala_id,
+        fecha_cita: datos.fecha_cita,
+        hora_cita: datos.hora_cita,
+        personas,
+        subtotal,
+        descuento: descuentoMonto,
+        codigo_descuento: codigoAplicado || null,
+        total,
+        metodo_pago: metodoPago,
+        estado_pago: datos.estado_pago || estadoPago,
+        referencia_pago: datos.referencia_pago || `REF-${nuevoId}`,
+        estado_cita: datos.estado_cita || (metodoPago === 'tarjeta' ? 'confirmada' : 'pendiente'),
+        notas: datos.notas || ''
+      };
 
-   citas.push(nueva);
-   localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
-
-   if (supabaseClient) {
-     const filaSupabase = { ...nueva, usuario_id: null };
-     supabaseClient
-       .from('citas')
-       .insert([filaSupabase])
-       .then(({ error }) => {
-         if (!error) sincronizarDesdeNube();
-       });
-   }
+      citas.push(nueva);
+      localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
 
       if (supabaseClient) {
-     const filaSupabase = { ...nueva, id: String(nuevoId) };
-     supabaseClient
+        const filaSupabase = { ...nueva, usuario_id: null };
+        supabaseClient
           .from('citas')
           .insert([filaSupabase])
-          .then(() => sincronizarDesdeNube());
+          .then(({ error }) => {
+            if (!error) sincronizarDesdeNube();
+          });
       }
 
       return { exito: true, mensaje: `Reservación #${nueva.id} generada con pase QR.`, cita: nueva };
@@ -545,7 +564,7 @@ const DB = (() => {
     reprogramarCita(id, salaId, fecha, hora) {
       const nuevoQr = `BER-${id}-${salaId.toUpperCase()}`;
       const citas = this.getCitas().map((c) =>
-        c.id === Number(id)
+        String(c.id) === String(id)
           ? {
               ...c,
               sala_id: salaId,
@@ -576,7 +595,7 @@ const DB = (() => {
     },
     cambiarEstadoCita(id, estado) {
       const citas = this.getCitas().map((c) =>
-        c.id === Number(id) ? { ...c, estado_cita: estado } : c
+        String(c.id) === String(id) ? { ...c, estado_cita: estado } : c
       );
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
 
@@ -592,7 +611,7 @@ const DB = (() => {
     },
     marcarPagado(id) {
       const citas = this.getCitas().map((c) =>
-        c.id === Number(id) ? { ...c, estado_pago: 'pagado', estado_cita: 'confirmada' } : c
+        String(c.id) === String(id) ? { ...c, estado_pago: 'pagado', estado_cita: 'confirmada' } : c
       );
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
 
