@@ -69,8 +69,8 @@
 
         <section class="grid-dos">
           <p class="campo">
-            <label for="personas" id="labelPersonas">Número de jugadores (2 a 6)</label>
-            <input type="number" id="personas" min="2" max="6" value="3" required>
+            <label for="personas" id="labelPersonas">Número de jugadores (2 a 8)</label>
+            <input type="number" id="personas" min="2" max="8" value="3" required>
           </p>
           <p class="campo">
             <label for="notas">Comentarios adicionales</label>
@@ -280,7 +280,7 @@
     function sincronizarLimitesPersonas(ajustarValor = true) {
       const opt = selectSala.selectedOptions[0];
       const min = opt && opt.dataset.min ? Number(opt.dataset.min) : 2;
-      const max = opt && opt.dataset.max ? Number(opt.dataset.max) : 6;
+      const max = opt && opt.dataset.max ? Number(opt.dataset.max) : 8;
 
       inputPersonas.min = min;
       inputPersonas.max = max;
@@ -342,7 +342,7 @@
 
     function cargarSalasDisponibles(verificarParametroUrl = false) {
       const todas = DB.getSalas();
-      const disponibles = todas.filter((s) => s.estado === 'disponible');
+      const disponibles = todas.filter((s) => String(s.estado).toLowerCase() === 'disponible');
       const valorAnterior = selectSala.value;
 
       selectSala.innerHTML = '';
@@ -358,16 +358,27 @@
       btnConfirmar.disabled = false;
       btnConfirmar.style.opacity = '1';
 
-      disponibles.forEach((s) => {
-        const min = s.min || 2;
-        const max = s.max || 6;
-        const opt = new Option(`${s.nombre} — $${s.precio} MXN / pers. (${min}-${max} jug.)`, s.id);
+      todas.forEach((s) => {
+        const min = Number(s.min) || 2;
+        const max = Number(s.max) || 8;
+        const disponible = String(s.estado).toLowerCase() === 'disponible';
+        const etiquetaEstado = disponible
+          ? `$${s.precio} MXN / pers. (${min}-${max} jug.)`
+          : (s.estado === 'mantenimiento' ? 'NO DISPONIBLE (Mantenimiento)' : 'CERRADA');
+
+        const opt = new Option(`${s.nombre} — ${etiquetaEstado}`, s.id);
         opt.dataset.precio = s.precio;
         opt.dataset.min = min;
         opt.dataset.max = max;
-        if (s.id === salaPreseleccionada || s.id === valorAnterior) opt.selected = true;
+        opt.disabled = !disponible;
+        if ((s.id === salaPreseleccionada || s.id === valorAnterior) && disponible) opt.selected = true;
         selectSala.add(opt);
       });
+
+      if (!selectSala.value) {
+        const primeraDisponible = Array.from(selectSala.options).find((o) => !o.disabled);
+        if (primeraDisponible) primeraDisponible.selected = true;
+      }
 
       if (verificarParametroUrl && salaPreseleccionada) {
         const salaBuscada = todas.find((s) => s.id === salaPreseleccionada);
@@ -524,7 +535,7 @@
       const hora = document.getElementById('hora_cita').value;
       const metodoPago = document.querySelector('input[name="metodo_pago"]:checked').value;
       const minJug = Number(inputPersonas.min) || 2;
-      const maxJug = Number(inputPersonas.max) || 6;
+      const maxJug = Number(inputPersonas.max) || 8;
       const cantJug = Number(inputPersonas.value);
 
       if (!selectSala.value) {
@@ -634,3 +645,4 @@
   </script>
 </body>
 </html>
+```[cite: 32]
