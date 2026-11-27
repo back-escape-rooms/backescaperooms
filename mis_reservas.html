@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mis Reservaciones y Pase QR | Back Escape Rooms</title>
   <link rel="stylesheet" href="auth_admin.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db_local.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
   <header class="barra-superior">
@@ -174,7 +175,10 @@
 
       <div class="pase-datos-lista" id="qrDetalles"></div>
 
+      <p class="respuesta" id="estadoEnvioCorreoModal" role="status" hidden style="margin-bottom:14px;"></p>
+
       <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button type="button" class="btn-mini" id="btnReenviarQRModal">Reenviar QR al Correo</button>
         <button type="button" class="btn-mini" onclick="window.print()">Imprimir / Guardar PDF</button>
         <button type="button" class="btn-mini" id="btnCerrarQR" style="background:var(--amarillo); color:#000; border-color:var(--amarillo);">Listo</button>
       </div>
@@ -183,6 +187,16 @@
 
   <script>
     'use strict';
+
+    const EMAILJS_CONFIG = {
+      PUBLIC_KEY: 'Tz-JRccC_RmAuIS8S',
+      SERVICE_ID: 'service_qusa0vo',
+      TEMPLATE_ID: 'template_c4kve4r'
+    };
+
+    if (typeof emailjs !== 'undefined') {
+      emailjs.init({ publicKey: EMAILJS_CONFIG.PUBLIC_KEY });
+    }
 
     const sesion = DB.getSesion();
     if (!sesion) window.location.href = 'acceso.html';
@@ -333,7 +347,41 @@
     const modalQR = document.getElementById('modalQR');
     document.getElementById('btnCerrarQR').addEventListener('click', () => modalQR.close());
 
-    function mostrarPaseQR(cita) {
+    let ultimosDatosEmailModal = null;
+
+    async function enviarQRPorCorreoModal(parametros) {
+      const estadoEnvio = document.getElementById('estadoEnvioCorreoModal');
+      const btnReenviar = document.getElementById('btnReenviarQRModal');
+      if (typeof emailjs === 'undefined') return;
+
+      estadoEnvio.textContent = `Enviando pase QR a ${parametros.to_email}...`;
+      estadoEnvio.className = 'respuesta ok';
+      estadoEnvio.hidden = false;
+      btnReenviar.disabled = true;
+
+      try {
+        await emailjs.send(
+          EMAILJS_CONFIG.SERVICE_ID,
+          EMAILJS_CONFIG.TEMPLATE_ID,
+          parametros
+        );
+        estadoEnvio.textContent = `¡Pase QR enviado correctamente al correo ${parametros.to_email}! (Revisa también Spam o Promociones).`;
+        estadoEnvio.className = 'respuesta ok';
+      } catch (err) {
+        console.error('Error EmailJS:', err);
+        estadoEnvio.textContent = `Error de EmailJS (${err.status || 'Red'}): ${err.text || 'Revisa permisos de Gmail o bloqueador de anuncios'}`;
+      } finally {
+        btnReenviar.disabled = false;
+      }
+    }
+
+    document.getElementById('btnReenviarQRModal').addEventListener('click', () => {
+      if (ultimosDatosEmailModal) {
+        enviarQRPorCorreoModal(ultimosDatosEmailModal);
+      }
+    });
+
+    function mostrarPaseQR(cita, enviarCorreo = false) {
       const salasMap = Object.fromEntries(DB.getSalas().map((s) => [s.id, s.nombre]));
       const nombreSala = salasMap[cita.sala_id] || cita.sala_id;
       const nombresMetodo = {
@@ -352,6 +400,8 @@
         `TOTAL:$${cita.total || 0}`
       ].join('|');
 
+      const qrHttpsUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(contenidoQR)}`;
+
       document.getElementById('imgCodigoQR').src = DB.generarQRDataURL(contenidoQR);
       document.getElementById('qrTituloSala').textContent = nombreSala;
       document.getElementById('qrCodigoTexto').textContent = cita.codigo_qr || `FOLIO #${cita.id}`;
@@ -362,7 +412,24 @@
         <p><strong>Método de pago:</strong> ${nombresMetodo[cita.metodo_pago] || 'Sucursal'} — <strong>$${Number(cita.total || 0).toLocaleString('es-MX')} MXN</strong></p>
       `;
 
+      ultimosDatosEmailModal = {
+        to_email: cita.cliente_correo,
+        nombre: cita.cliente_nombre,
+        folio: `#${cita.id} (${cita.codigo_qr || 'BER-' + cita.id})`,
+        sala: nombreSala,
+        fecha: cita.fecha_cita,
+        hora: cita.hora_cita,
+        jugadores: String(cita.personas),
+        total: `$${Number(cita.total || 0).toLocaleString('es-MX')} MXN (${nombresMetodo[cita.metodo_pago] || 'Sucursal'})`,
+        qr_url: qrHttpsUrl
+      };
+
+      document.getElementById('estadoEnvioCorreoModal').hidden = true;
       modalQR.showModal();
+
+      if (enviarCorreo) {
+        enviarQRPorCorreoModal(ultimosDatosEmailModal);
+      }
     }
 
     function cargarMisCitas() {
@@ -394,7 +461,7 @@
           <td><span class="estado-pill estado-${c.estado_cita}">${c.estado_cita}</span></td>
           <td><button type="button" class="btn-mini btn-ver-qr" style="border-color:var(--amarillo); color:var(--amarillo);">Ver QR</button></td>
         `;
-        tr.querySelector('.btn-ver-qr').addEventListener('click', () => mostrarPaseQR(c));
+        tr.querySelector('.btn-ver-qr').addEventListener('click', () => mostrarPaseQR(c, false));
         tbody.appendChild(tr);
       });
     }
@@ -469,7 +536,7 @@
       msgCupon.textContent = '';
       actualizarTotal(true);
       cargarMisCitas();
-      if (res.cita) mostrarPaseQR(res.cita);
+      if (res.cita) mostrarPaseQR(res.cita, true);
     });
 
     cargarMisCitas();
