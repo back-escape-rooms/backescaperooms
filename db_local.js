@@ -74,7 +74,7 @@ const DB = (() => {
 
   /* Sincronización automática en segundo plano con Supabase */
   async function sincronizarDesdeNube() {
-    if (!supabaseClient) return;
+    if (!supabaseClient) return false;
     try {
       const [resSalas, resUsuarios, resCitas, resPromos] = await Promise.all([
         supabaseClient.from('salas').select('*'),
@@ -82,6 +82,10 @@ const DB = (() => {
         supabaseClient.from('citas').select('*').order('id', { ascending: true }),
         supabaseClient.from('promociones').select('*')
       ]);
+
+      if (resSalas.error) console.error('Error leyendo salas:', resSalas.error.message);
+      if (resUsuarios.error) console.error('Error leyendo usuarios:', resUsuarios.error.message);
+      if (resCitas.error) console.error('Error leyendo citas:', resCitas.error.message);
 
       if (resSalas.data && resSalas.data.length > 0) {
         localStorage.setItem(KEYS.SALAS, JSON.stringify(resSalas.data.map(normalizarSala)));
@@ -100,12 +104,14 @@ const DB = (() => {
         sincronizarSitioPublico();
       }
       window.dispatchEvent(new CustomEvent('ber-db-sincronizada'));
+      return true;
     } catch (err) {
       console.warn('Aviso de sincronización Supabase:', err.message);
+      return false;
     }
   }
 
-  sincronizarDesdeNube();
+  const promesaSyncInicial = sincronizarDesdeNube();
 
   /* Generador nativo de Código QR escaneable (Versiones 1–6, ECC L, Byte Mode) */
   function generarQRDataURL(texto) {
@@ -377,6 +383,7 @@ const DB = (() => {
 
   return {
     supabase: supabaseClient,
+    promesaSyncInicial,
     sincronizarDesdeNube,
     generarQRDataURL,
     validarCupon,
@@ -390,8 +397,9 @@ const DB = (() => {
       if (usuarios.some((u) => u.correo.toLowerCase() === correoNorm)) {
         return { exito: false, mensaje: 'Este correo ya está registrado. Inicia sesión.' };
       }
+      const nuevoId = Number(String(Date.now()).slice(-9));
       const nuevo = {
-        id: String(Date.now()),
+        id: nuevoId,
         nombre: nombre.trim(),
         telefono: telefono.trim(),
         correo: correoNorm,
@@ -409,16 +417,21 @@ const DB = (() => {
 
       if (supabaseClient) {
         supabaseClient.from('usuarios').insert([{
-          id: nuevo.id,
           nombre: nuevo.nombre,
           telefono: nuevo.telefono,
           correo: nuevo.correo,
           password: nuevo.password,
           rol: 'cliente'
-        }]).then(({ error }) => {
+        }]).select().single().then(({ data, error }) => {
           if (error) {
-            alert('Error registro Supabase: ' + error.message);
-          } else {
+            console.error('Error registro Supabase:', error.message);
+          } else if (data) {
+            localStorage.setItem(KEYS.SESION, JSON.stringify({
+              id: data.id,
+              nombre: data.nombre,
+              correo: data.correo,
+              rol: data.rol
+            }));
             sincronizarDesdeNube();
           }
         });
@@ -467,7 +480,10 @@ const DB = (() => {
           .from('salas')
           .update({ estado, precio: precioNum })
           .eq('id', id)
-          .then(() => sincronizarDesdeNube());
+          .then(({ error }) => {
+            if (error) console.error('Error actualizando sala en Supabase:', error.message);
+            else sincronizarDesdeNube();
+          });
       }
 
       return { exito: true, mensaje: `Sala (${id}) actualizada a: ${estado.toUpperCase()}.` };
@@ -525,10 +541,14 @@ const DB = (() => {
       if (metodoPago === 'tarjeta') estadoPago = 'pagado';
       if (metodoPago === 'transferencia') estadoPago = 'en_validacion';
 
+      const usuarioValido = datos.usuario_id && Number.isSafeInteger(Number(datos.usuario_id)) && Number(datos.usuario_id) < 1000000000
+        ? Number(datos.usuario_id)
+        : null;
+
       const nueva = {
-        id: String(nuevoId),
+        id: nuevoId,
         codigo_qr: `BER-${nuevoId}-${datos.sala_id.toUpperCase()}`,
-        usuario_id: datos.usuario_id || null,
+        usuario_id: usuarioValido,
         cliente_nombre: datos.cliente_nombre,
         cliente_correo: datos.cliente_correo.toLowerCase(),
         sala_id: datos.sala_id,
@@ -550,21 +570,25 @@ const DB = (() => {
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
 
       if (supabaseClient) {
-        const filaSupabase = { ...nueva, usuario_id: null };
         supabaseClient
           .from('citas')
-          .insert([filaSupabase])
+          .insert([nueva])
           .then(({ error }) => {
-            if (!error) sincronizarDesdeNube();
+            if (error) {
+              console.error('Error guardando cita en Supabase:', error.message);
+            } else {
+              sincronizarDesdeNube();
+            }
           });
       }
 
       return { exito: true, mensaje: `Reservación #${nueva.id} generada con pase QR.`, cita: nueva };
     },
     reprogramarCita(id, salaId, fecha, hora) {
-      const nuevoQr = `BER-${id}-${salaId.toUpperCase()}`;
+      const idNum = Number(id);
+      const nuevoQr = `BER-${idNum}-${salaId.toUpperCase()}`;
       const citas = this.getCitas().map((c) =>
-        String(c.id) === String(id)
+        Number(c.id) === idNum
           ? {
               ...c,
               sala_id: salaId,
@@ -587,15 +611,19 @@ const DB = (() => {
             codigo_qr: nuevoQr,
             estado_cita: 'reprogramada'
           })
-          .eq('id', Number(id))
-          .then(() => sincronizarDesdeNube());
+          .eq('id', idNum)
+          .then(({ error }) => {
+            if (error) console.error('Error reprogramando cita:', error.message);
+            else sincronizarDesdeNube();
+          });
       }
 
-      return { exito: true, mensaje: `Cita #${id} reprogramada y código QR actualizado.` };
+      return { exito: true, mensaje: `Cita #${idNum} reprogramada y código QR actualizado.` };
     },
     cambiarEstadoCita(id, estado) {
+      const idNum = Number(id);
       const citas = this.getCitas().map((c) =>
-        String(c.id) === String(id) ? { ...c, estado_cita: estado } : c
+        Number(c.id) === idNum ? { ...c, estado_cita: estado } : c
       );
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
 
@@ -603,15 +631,19 @@ const DB = (() => {
         supabaseClient
           .from('citas')
           .update({ estado_cita: estado })
-          .eq('id', Number(id))
-          .then(() => sincronizarDesdeNube());
+          .eq('id', idNum)
+          .then(({ error }) => {
+            if (error) console.error('Error cambiando estado de cita:', error.message);
+            else sincronizarDesdeNube();
+          });
       }
 
-      return { exito: true, mensaje: `Cita #${id} marcada como ${estado.toUpperCase()}.` };
+      return { exito: true, mensaje: `Cita #${idNum} marcada como ${estado.toUpperCase()}.` };
     },
     marcarPagado(id) {
+      const idNum = Number(id);
       const citas = this.getCitas().map((c) =>
-        String(c.id) === String(id) ? { ...c, estado_pago: 'pagado', estado_cita: 'confirmada' } : c
+        Number(c.id) === idNum ? { ...c, estado_pago: 'pagado', estado_cita: 'confirmada' } : c
       );
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
 
@@ -619,15 +651,20 @@ const DB = (() => {
         supabaseClient
           .from('citas')
           .update({ estado_pago: 'pagado', estado_cita: 'confirmada' })
-          .eq('id', Number(id))
-          .then(() => sincronizarDesdeNube());
+          .eq('id', idNum)
+          .then(({ error }) => {
+            if (error) console.error('Error confirmando pago:', error.message);
+            else sincronizarDesdeNube();
+          });
       }
 
-      return { exito: true, mensaje: `Pago de la cita #${id} confirmado.` };
+      return { exito: true, mensaje: `Pago de la cita #${idNum} confirmado.` };
     },
     enviarMensajeContacto(datos) {
       if (supabaseClient) {
-        supabaseClient.from('mensajes_contacto').insert([datos]).then(() => {});
+        supabaseClient.from('mensajes_contacto').insert([datos]).then(({ error }) => {
+          if (error) console.error('Error enviando mensaje a Supabase:', error.message);
+        });
       }
       return { exito: true, mensaje: 'Mensaje enviado correctamente.' };
     }
