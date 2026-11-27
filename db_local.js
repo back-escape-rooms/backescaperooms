@@ -524,9 +524,10 @@ const DB = (() => {
    localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
 
    if (supabaseClient) {
+     const filaSupabase = { ...nueva, usuario_id: null };
      supabaseClient
        .from('citas')
-       .insert([nueva])
+       .insert([filaSupabase])
        .then(({ error }) => {
          if (error) {
            alert('Error Supabase: ' + error.message);
@@ -534,6 +535,8 @@ const DB = (() => {
            sincronizarDesdeNube();
          }
        });
+   } else {
+     alert('Falta el script de Supabase en este archivo HTML');
    }
 
       if (supabaseClient) {
