@@ -524,9 +524,8 @@ const DB = (() => {
       localStorage.setItem(KEYS.CITAS, JSON.stringify(citas));
 
       if (supabaseClient) {
-        const filaSupabase = { ...nueva };
-        delete filaSupabase.id;
-        supabaseClient
+     const filaSupabase = { ...nueva, id: String(nuevoId) };
+     supabaseClient
           .from('citas')
           .insert([filaSupabase])
           .then(() => sincronizarDesdeNube());
