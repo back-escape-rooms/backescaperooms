@@ -367,51 +367,50 @@ const DB = (() => {
     getUsuarios() {
       return JSON.parse(localStorage.getItem(KEYS.USUARIOS)) || [];
     },
-    registrar(nombre, telefono, correo, password) {
-      const usuarios = this.getUsuarios();
-      const correoNorm = correo.trim().toLowerCase();
-      if (usuarios.some((u) => u.correo.toLowerCase() === correoNorm)) {
-        return { exito: false, mensaje: 'Este correo ya está registrado. Inicia sesión.' };
-      }
-      const nuevo = {
-        id: Date.now(),
-        nombre: nombre.trim(),
-        telefono: telefono.trim(),
-        correo: correoNorm,
-        password,
-        rol: 'cliente'
-      };
-      usuarios.push(nuevo);
-      localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
-      localStorage.setItem(KEYS.SESION, JSON.stringify({
-        id: nuevo.id,
-        nombre: nuevo.nombre,
-        correo: nuevo.correo,
-        rol: nuevo.rol
-      }));
 
-      if (supabaseClient) {
-        supabaseClient.from('usuarios').insert([{
-          nombre: nuevo.nombre,
-          telefono: nuevo.telefono,
-          correo: nuevo.correo,
-          password: nuevo.password,
-          rol: 'cliente'
-        }]).select().then(({ data }) => {
-          if (data && data[0]) {
-            localStorage.setItem(KEYS.SESION, JSON.stringify({
-              id: data[0].id,
-              nombre: data[0].nombre,
-              correo: data[0].correo,
-              rol: data[0].rol
-            }));
-          }
-          sincronizarDesdeNube();
-        });
-      }
+     registrar(nombre, telefono, correo, password) {
+   const usuarios = this.getUsuarios();
+   const correoNorm = correo.trim().toLowerCase();
+   if (usuarios.some((u) => u.correo.toLowerCase() === correoNorm)) {
+     return { exito: false, mensaje: 'Este correo ya está registrado. Inicia sesión.' };
+   }
+   const nuevo = {
+     id: String(Date.now()),
+     nombre: nombre.trim(),
+     telefono: telefono.trim(),
+     correo: correoNorm,
+     password,
+     rol: 'cliente'
+   };
+   usuarios.push(nuevo);
+   localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
+   localStorage.setItem(KEYS.SESION, JSON.stringify({
+     id: nuevo.id,
+     nombre: nuevo.nombre,
+     correo: nuevo.correo,
+     rol: nuevo.rol
+   }));
 
-      return { exito: true, mensaje: 'Registro completado. Redirigiendo...', rol: 'cliente' };
-    },
+   if (supabaseClient) {
+     supabaseClient.from('usuarios').insert([{
+       id: nuevo.id,
+       nombre: nuevo.nombre,
+       telefono: nuevo.telefono,
+       correo: nuevo.correo,
+       password: nuevo.password,
+       rol: 'cliente'
+     }]).then(({ error }) => {
+       if (error) {
+         alert('Error registro Supabase: ' + error.message);
+       } else {
+         sincronizarDesdeNube();
+       }
+     });
+   }
+
+   return { exito: true, mensaje: 'Registro completado. Redirigiendo...', rol: 'cliente' };
+ },
+     
     login(correo, password) {
       const correoNorm = correo.trim().toLowerCase();
       const usuario = this.getUsuarios().find(
