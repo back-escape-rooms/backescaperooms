@@ -1,8 +1,7 @@
 'use strict';
 
-/* ==========================================================================
-   CONFIGURACIÓN DE SUPABASE (PEGA AQUÍ TUS DOS LLAVES DEL PASO 2)
-   ========================================================================== */
+/* CONFIGURACIÓN DE SUPABASE 
+   
 const SUPABASE_URL = 'https://oigmgbwsilpbxuveckie.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pZ21nYndzaWxwYnh1dmVja2llIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU3MjI4OTMsImV4cCI6MjExMTI5ODg5M30.xC4E1PzWG-BK9-Fx_Mf5sOCk0itPhlDFBotxsgDVFes';
 
